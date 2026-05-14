@@ -124,6 +124,28 @@ const i = await gateway.gh.issuesCreate({
 await gateway.gh.issuesCreateComment({ owner, repo, issue_number: 42, body: "…" });
 ```
 
+## When a call returns 404
+
+A 404 from `/repos/{owner}/{repo}*` does **NOT** mean "no permission." GitHub
+returns the same 404 for: repo doesn't exist, repo was renamed (and the
+old-name redirect lapsed or was never established for the sub-resource),
+repo was deleted, repo is private and the token can't see it, or you simply
+typo'd the name. Saying "I don't have permission" is almost always the wrong
+interpretation — try the cheap recovery first.
+
+When you see a 404 on a repo path:
+
+1. **Search for it** to see if it exists under a different name:
+   ```javascript
+   const s = await gateway.gh.searchRepos({ q: "embabel assistant", per_page: 5 });
+   for (const r of s.items) console.log(`${r.full_name} — ${r.description ?? ""}`);
+   ```
+2. **Confirm the current name with the user** if the search doesn't yield an obvious match.
+3. Only if the repo is found and accessible but the *sub-resource* (e.g. `/issues/9999`) returns 404 — then it really is "doesn't exist within that repo."
+
+Do not say "no permission" unless you actually saw a `403`. 404 is an identity
+problem, not an access problem.
+
 ## Pitfalls
 
 - Method names are **camelCase**; arg names are **snake_case**. Most "not a workspace tool" errors come from snake_case method names.
@@ -133,3 +155,4 @@ await gateway.gh.issuesCreateComment({ owner, repo, issue_number: 42, body: "…
 - `per_page` silently caps at 100.
 - `state` defaults to `open` — pass `"all"` to include closed.
 - Auth limit: 5,000 req/h; **search limit: 30 req/min** — never loop a search.
+- A `404` is an identity problem (wrong owner/repo, renamed, deleted) — not an access problem. Use `searchRepos` to recover, then ask the user.
