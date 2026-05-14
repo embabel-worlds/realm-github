@@ -32,8 +32,20 @@ See `prompts/examples.md` for usage patterns.
 
 ## Auth
 
-Set `GITHUB_PERSONAL_ACCESS_TOKEN` in the credential store or
-environment. Fine-grained PATs and classic PATs both work (Bearer auth).
+GitHub OAuth App. One-time setup:
+
+1. Register an OAuth App at https://github.com/settings/developers.
+   Callback URL: `http://localhost:8042/api/v1/auth/oauth2/callback`
+   (single route for all providers; state carries provider id).
+2. Add the client_id / client_secret to `admin/oauth-apps.yml` under
+   key `gh`.
+3. In the assistant: Settings → Connected Services → Authorize for
+   GitHub. The token lands in the wallet credential store.
+
+Tokens are non-expiring (OAuth App, not GitHub App). To migrate to a
+GitHub App later (rotating short-lived tokens, fine-grained per-repo
+permissions, Checks API, `[bot]` actor identity) see "Future migration
+to GitHub App" in `notes/wallet.md` — mechanical change.
 
 ## Tag filter
 
