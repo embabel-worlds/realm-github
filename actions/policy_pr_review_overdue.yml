@@ -4,9 +4,11 @@
 # on `github.pr_review_request` because of the cheap utility.
 #
 # This is a `stepType: policy` spec — a deterministic predicate over a
-# signal, evaluated by the host without an LLM call. The sibling
-# `stepType: triage` is the LLM-judged form. Both produce
-# AttentionCandidates the host renders into notifications.
+# signal, evaluated by the host without an LLM call. LLM-judged
+# escalation is a vanilla framework `stepType: action` producing an
+# `AttentionVerdict`; the host's wrap action lifts it to an
+# AttentionCandidate. Both shapes produce AttentionCandidates the host
+# renders into notifications.
 
 stepType: policy
 name: pr_review_overdue
@@ -22,10 +24,8 @@ surface:
   why: "{repo}: {title}"
   url: "{url}"
 
-# UtilityAI economics. Cost ~0 (AST walk); value 1.0. Net utility 0.99,
-# which beats any LLM triage's typical 0.5 — the planner picks this
-# first. If the predicate doesn't match, the planner escalates to the
-# LLM triage automatically.
-utility:
-  cost: 0.01
-  value: 1.0
+# Top-level cost/value, matching the framework's PromptedActionSpec
+# convention. Cost ~0 (AST walk); value 1.0. Net utility 0.99 beats
+# any LLM triage's typical 0.5 — the planner picks this first.
+cost: 0.01
+value: 1.0

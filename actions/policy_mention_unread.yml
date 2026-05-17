@@ -15,6 +15,5 @@ surface:
   why: "{repo}#{number}: {title}"
   url: "{url}"
 
-utility:
-  cost: 0.01
-  value: 1.0
+cost: 0.01
+value: 1.0
