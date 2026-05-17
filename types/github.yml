@@ -1,0 +1,49 @@
+# GitHub signal types — pack-declared DynamicTypes registered into the
+# host's DataDictionary chain. Policies and consequence rules predicate
+# over these by `name`; field names follow the YAML's snake_case
+# convention (the host's evaluator normalises snake_case <-> camelCase
+# at the boundary).
+#
+# Required Signal wire fields (id, occurredAt, sourceKind, sourceId,
+# subject) are populated by the dispatcher from each event's `mapping:`
+# block — they don't need to appear here.
+
+- name: github.pr_review_request
+  parents: [Signal]
+  description: "A pull-request review has been requested from the user. Fires on the github `pull_request` webhook with action=review_requested, or via search-poll fallback."
+  properties:
+    reviewer:      "GitHub login of the requested reviewer"
+    repo:          "owner/repo identifier"
+    number:        "Pull request number within the repo"
+    title:         "Pull request title"
+    author:        "Pull request author's GitHub login"
+    url:           "Web URL of the pull request"
+    body_excerpt:  "Body excerpt for LLM context"
+    labels:        "Labels on the pull request (list)"
+    comment_count: "Number of comments on the pull request"
+
+- name: github.mention
+  parents: [Signal]
+  description: "The user is @-mentioned in a github issue or pull request body or comment."
+  properties:
+    mentioned:    "GitHub login of the mentioned user"
+    repo:         "owner/repo identifier"
+    number:       "Issue or PR number"
+    title:        "Issue or PR title"
+    author:       "Author of the comment that contains the mention"
+    kind:         "'issue' or 'pull_request'"
+    url:          "Web URL of the item"
+    body_excerpt: "Body excerpt for LLM context"
+
+- name: github.assignment
+  parents: [Signal]
+  description: "An issue or pull request has been assigned to the user. Fires on the github `issues` or `pull_request` webhook with action=assigned, or via search-poll fallback."
+  properties:
+    assignee:     "GitHub login of the assignee"
+    repo:         "owner/repo identifier"
+    number:       "Issue or PR number"
+    title:        "Issue or PR title"
+    author:       "Author of the item"
+    kind:         "'issue' or 'pull_request'"
+    url:          "Web URL of the item"
+    body_excerpt: "Body excerpt for LLM context"

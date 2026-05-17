@@ -1,0 +1,20 @@
+# Deterministic fast-path for direct @mentions in github PRs/issues.
+# Fires when the user is mentioned and the mention is unacknowledged.
+
+stepType: policy
+name: mention_unread
+description: Direct @mention in a github PR or issue, unacknowledged
+
+on: github.mention
+
+whenExpr: "mentioned == $self and not acknowledged"
+
+surface:
+  tier: TIMELY
+  headline: "@mention from {author}"
+  why: "{repo}#{number}: {title}"
+  url: "{url}"
+
+utility:
+  cost: 0.01
+  value: 1.0

@@ -1,0 +1,57 @@
+# Event source for github.mention signals.
+#
+# Mentions are a notification-class event, not a single webhook
+# action. Github fires them at the user level (read via the
+# notifications API). Two paths:
+#
+#  - WEBHOOK — github doesn't emit a dedicated "@mention" event.
+#    The host can listen for `issue_comment` / `pull_request_review_comment`
+#    / `issues` / `pull_request` events and post-filter by scanning the
+#    body for `@<login>`. That filter is outside the YAML mapping
+#    surface; v0.0.1 webhook block is omitted and the poll path is
+#    canonical.
+#
+#  - POLL — calls `/notifications` (user-scoped) with `reason=mention`.
+#    Cleaner than scanning, and what github intends. Requires the
+#    `notifications` operationId be added to apis/apis.yml's allowlist
+#    (currently not on it).
+- type: github.mention
+
+  poll:
+    every: 5m
+    api: gh
+    # NOTE: requires `activity/list-notifications-for-authenticated-user`
+    # to be added to apis/apis.yml's operation-ids allowlist before this
+    # actually works. Flagged here so the dependency is visible.
+    method: "activity/list-notifications-for-authenticated-user"
+    args:
+      # `since:` is the canonical github notifications cursor — pass
+      # the persisted timestamp; github returns only notifications
+      # since that moment.
+      since: "{{cursor}}"
+      participating: "true"
+      per_page: "30"
+    cursor:
+      param: "since"
+      from: "$.updated_at"
+    mapping:
+      id:           "$.id"
+      occurredAt:   "$.updated_at"
+      sourceKind:   "github"
+      sourceId:     "$.id"
+      subject:      "$.subject.title"
+      url:          "$.subject.url"
+      mentioned:    "@me"
+      # `$.repository.full_name` works for both issue and PR notifications.
+      repo:         "$.repository.full_name"
+      # `subject.url` ends with `/issues/<n>` or `/pulls/<n>`; the host
+      # can extract `number` from the URL trail via post-projection
+      # enrichment. Kept null in this mapping to keep the dispatcher
+      # surface minimal.
+      number:       ""
+      title:        "$.subject.title"
+      author:       "$.subject.latest_comment_url"
+      # `$.subject.type` is "Issue" or "PullRequest"; downstream
+      # consumers can normalise to lowercase.
+      kind:         "$.subject.type"
+      body_excerpt: ""

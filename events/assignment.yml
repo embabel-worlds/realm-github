@@ -1,0 +1,57 @@
+# Event source for github.assignment signals.
+#
+# Webhook: github `issues` and `pull_request` events with
+# action=assigned. The host's webhook controller filters action and
+# routes to this projection. The mapping below targets the `issues`
+# payload shape; PRs have a near-identical `pull_request` envelope and
+# the host controller normalises to a single payload root before
+# dispatch.
+- type: github.assignment
+
+  webhook:
+    signature: hmac-sha256
+    signature-secret: GITHUB_WEBHOOK_SECRET
+    mapping:
+      id:           "$.issue.id"
+      occurredAt:   "$.issue.updated_at"
+      sourceKind:   "github"
+      sourceId:     "$.issue.id"
+      subject:      "$.issue.title"
+      url:          "$.issue.html_url"
+      assignee:     "$.assignee.login"
+      repo:         "$.repository.full_name"
+      number:       "$.issue.number"
+      title:        "$.issue.title"
+      author:       "$.issue.user.login"
+      kind:         "issue"   # PR payloads route to a sibling event config; future slice
+      body_excerpt: "$.issue.body"
+
+  poll:
+    every: 5m
+    api: gh
+    method: "search/issues-and-pull-requests"
+    args:
+      q: "is:open assignee:@me updated:>={{cursor}}"
+      per_page: "30"
+      sort: "updated"
+      order: "asc"
+    cursor:
+      from: "$.updated_at"
+    mapping:
+      id:           "$.id"
+      occurredAt:   "$.updated_at"
+      sourceKind:   "github"
+      sourceId:     "$.id"
+      subject:      "$.title"
+      url:          "$.html_url"
+      assignee:     "@me"
+      repo:         "$.repository_url"
+      number:       "$.number"
+      title:        "$.title"
+      author:       "$.user.login"
+      # Search results union issues + PRs; the `pull_request` key is
+      # present only on PR rows. v0.0.1 leaves this as a literal; a
+      # follow-up adds conditional projection (`when` clauses in the
+      # mapping) to pick correctly per row.
+      kind:         "issue"
+      body_excerpt: "$.body"

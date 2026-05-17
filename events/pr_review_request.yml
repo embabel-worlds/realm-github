@@ -1,0 +1,87 @@
+# Event source for github.pr_review_request signals.
+#
+# Two complementary delivery paths, same output type:
+#
+#  - WEBHOOK — the cheap, real-time path. Github POSTs `pull_request`
+#    events when something changes on a PR; we filter to action ==
+#    review_requested and project the payload into a DynamicSignal.
+#    This is the primary path once webhooks are configured on the org.
+#
+#  - POLL — the catch-up / no-webhook-configured path. Calls the
+#    github search API with an `updated:>={{cursor}}` clause; the
+#    dispatcher persists the max updatedAt across the response set as
+#    the next cursor. Same property mapping, same output signal type —
+#    consumers can't tell which path produced the signal.
+#
+# Both reference fields on `github.pr_review_request` declared in
+# types/github.yml. Tenancy resolution (which AssistantUser the signal
+# belongs to) is the host webhook controller's concern; the mapping
+# below describes only the projection.
+- type: github.pr_review_request
+
+  webhook:
+    # `pull_request` is the github event name. The host's webhook
+    # controller matches the inbound URL (.../github) and routes to
+    # this projection only when the payload's `action` field is
+    # review_requested — that filter belongs in the controller per
+    # the dispatcher's current "match by source name" semantics.
+    signature: hmac-sha256
+    signature-secret: GITHUB_WEBHOOK_SECRET
+    mapping:
+      # Required Signal wire fields
+      id:           "$.pull_request.id"
+      occurredAt:   "$.pull_request.updated_at"
+      sourceKind:   "github"
+      sourceId:     "$.pull_request.id"
+      subject:      "$.pull_request.title"
+      url:          "$.pull_request.html_url"
+      # Type-specific properties
+      reviewer:      "$.requested_reviewer.login"
+      repo:          "$.repository.full_name"
+      number:        "$.pull_request.number"
+      title:         "$.pull_request.title"
+      author:        "$.pull_request.user.login"
+      body_excerpt:  "$.pull_request.body"
+      labels:        "$.pull_request.labels[*].name"
+      comment_count: "$.pull_request.comments"
+
+  poll:
+    # Catch-up cadence. Webhook delivery is preferred; this runs in
+    # parallel so PRs that arrived during downtime get picked up.
+    every: 5m
+    api: gh
+    method: "search/issues-and-pull-requests"
+    args:
+      # `{{cursor}}` is templated by the host's poll executor against
+      # the persisted cursor for this (user, event) pair. Initial value
+      # is "*" so the first run picks up the whole open set; subsequent
+      # runs see only items updated since the last successful poll.
+      q: "is:open type:pr review-requested:@me updated:>={{cursor}}"
+      per_page: "30"
+      sort: "updated"
+      order: "asc"
+    cursor:
+      # `from:` is the JSONPath into each result item whose maximum
+      # across the batch becomes the next persisted cursor. `param:` is
+      # left null because the cursor is interpolated into `args.q`, not
+      # passed as a separate query parameter.
+      from: "$.updated_at"
+    mapping:
+      id:           "$.id"
+      occurredAt:   "$.updated_at"
+      sourceKind:   "github"
+      sourceId:     "$.id"
+      subject:      "$.title"
+      url:          "$.html_url"
+      reviewer:     "@me"
+      # `$.repository_url` is "https://api.github.com/repos/owner/name";
+      # the dispatcher's literal+templated values can't manipulate
+      # strings yet — leaving raw and letting consumers parse, or relying
+      # on follow-up enrichment to populate the friendly repo slug.
+      repo:          "$.repository_url"
+      number:        "$.number"
+      title:         "$.title"
+      author:        "$.user.login"
+      body_excerpt:  "$.body"
+      labels:        "$.labels[*].name"
+      comment_count: "$.comments"
