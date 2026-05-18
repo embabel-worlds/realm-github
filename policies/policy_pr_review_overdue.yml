@@ -19,7 +19,7 @@ on: github.pr_review_request
 whenExpr: "reviewer == $self and age >= 48h"
 
 surface:
-  tier: TIMELY
+  tier: AMBIENT
   headline: "Review #{number} overdue"
   why: "{repo}: {title}"
   url: "{url}"

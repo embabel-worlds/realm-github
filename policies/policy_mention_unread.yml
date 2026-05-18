@@ -10,7 +10,7 @@ on: github.mention
 whenExpr: "mentioned == $self and not acknowledged"
 
 surface:
-  tier: TIMELY
+  tier: AMBIENT
   headline: "@mention from {author}"
   why: "{repo}#{number}: {title}"
   url: "{url}"
