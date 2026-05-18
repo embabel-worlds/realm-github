@@ -1,28 +1,20 @@
 # Deterministic fast-path for stale review requests. Fires when the user
 # is the requested reviewer and the request has been outstanding ≥ 48h.
-# The host's planner picks this before the (more expensive) LLM triage
+# The host's planner picks this before the (more expensive) LLM judgment
 # on `github.pr_review_request` because of the cheap utility.
 #
-# This is a `stepType: policy` spec — a deterministic predicate over a
-# signal, evaluated by the host without an LLM call. LLM-judged
-# escalation is a vanilla framework `stepType: action` producing an
-# `AttentionVerdict`; the host's wrap action lifts it to an
-# AttentionCandidate. Both shapes produce AttentionCandidates the host
-# renders into notifications.
+# `stepType: policy` is a peer of the framework's `stepType: action`
+# (PromptedActionSpec). Lives in `actions/` alongside LLM-driven specs;
+# the framework's loader picks both up via NameOrClassTypeIdResolver.
 
 stepType: policy
 name: pr_review_overdue
 description: A review was requested from you and it's been over 48h
 
-on: github.pr_review_request
+inputTypeNames:
+  - github.pr_review_request
 
 whenExpr: "reviewer == $self and age >= 48h"
-
-surface:
-  tier: AMBIENT
-  headline: "Review #{number} overdue"
-  why: "{repo}: {title}"
-  url: "{url}"
 
 # Top-level cost/value, matching the framework's PromptedActionSpec
 # convention. Cost ~0 (AST walk); value 1.0. Net utility 0.99 beats

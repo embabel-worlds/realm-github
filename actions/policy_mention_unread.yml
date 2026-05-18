@@ -5,15 +5,10 @@ stepType: policy
 name: mention_unread
 description: Direct @mention in a github PR or issue, unacknowledged
 
-on: github.mention
+inputTypeNames:
+  - github.mention
 
 whenExpr: "mentioned == $self and not acknowledged"
-
-surface:
-  tier: AMBIENT
-  headline: "@mention from {author}"
-  why: "{repo}#{number}: {title}"
-  url: "{url}"
 
 cost: 0.01
 value: 1.0
