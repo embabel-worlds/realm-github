@@ -3,9 +3,10 @@
 # The host's planner picks this before the (more expensive) LLM judgment
 # on `github.pr_review_request` because of the cheap utility.
 #
-# `stepType: policy` is a peer of the framework's `stepType: action`
-# (PromptedActionSpec). Lives in `actions/` alongside LLM-driven specs;
-# the framework's loader picks both up via NameOrClassTypeIdResolver.
+# Host-extension ActionSpec — the FQN `stepType` resolves via the
+# framework's NameOrClassTypeIdResolver (Class.forName) so no short
+# name is reserved upstream while the predicate DSL iterates. Lives
+# in `actions/` alongside LLM-driven specs.
 
 stepType: com.embabel.assistant.policy.spec.PolicyActionSpec
 name: pr_review_overdue
