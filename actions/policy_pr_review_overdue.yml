@@ -7,7 +7,7 @@
 # (PromptedActionSpec). Lives in `actions/` alongside LLM-driven specs;
 # the framework's loader picks both up via NameOrClassTypeIdResolver.
 
-stepType: policy
+stepType: com.embabel.assistant.policy.spec.PolicyActionSpec
 name: pr_review_overdue
 description: A review was requested from you and it's been over 48h
 
