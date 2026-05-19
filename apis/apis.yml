@@ -6,19 +6,21 @@
 # Instead we pin an explicit operationIds allowlist of the ~15 ops that
 # cover ~95% of common chat tasks. Add more here when a need arises.
 #
-# Auth: GitHub OAuth App — non-expiring user-to-server tokens. The
-# user clicks Authorize once; tokens land in the wallet credential
-# store under `gh_OAUTH2#${login}`. To migrate to a GitHub App
-# (rotating short-lived tokens, fine-grained per-repo perms, Checks
-# API, [bot] identity) see the "Future migration to GitHub App"
-# section in notes/wallet.md — mechanical change.
+# Auth: GitHub App (`embabel`) + PKCE. Single Embabel-owned App across all
+# deployments; no per-deployment registration, no client_secret. Tokens land
+# in the wallet credential store under `gh_OAUTH2#${login}` and rotate
+# (~8h access, ~6mo refresh). Permissions are declared at App registration
+# (installation-time, fine-grained per-repo) rather than via OAuth scopes —
+# hence no `scopes:` entry below.
 #
-# Setup (one-time, manual):
-#   1. Register an OAuth App at https://github.com/settings/developers
-#      with callback URL: http://localhost:8042/api/v1/auth/oauth2/callback
-#      (single route for all providers; state carries provider id).
-#   2. Add client_id / client_secret to admin/oauth-apps.yml under key
-#      `gh` (same name as this entry's `name:` field).
+# User flow: Settings → Connected Services → Authorize for GitHub. If the
+# App isn't installed on the chosen account yet, GitHub shows its install
+# screen (pick repos) before consent; otherwise jumps straight to consent.
+# The "Manage installation on GitHub" link in the same UI takes the user
+# to the install page to add/remove repos later.
+#
+# No per-deployment setup: `client-id` is public, `pkce: true` means
+# `OAuth2Service` follows the PKCE path and never looks for a client_secret.
 - url: "https://raw.githubusercontent.com/github/rest-api-description/main/descriptions/api.github.com/api.github.com.json"
   name: gh
   type: openapi
@@ -26,19 +28,9 @@
   oauth2:
     auth-url: https://github.com/login/oauth/authorize
     token-url: https://github.com/login/oauth/access_token
-    # Maximum reasonable scope — broad enough for any future assistant
-    # tool, narrow enough to exclude genuinely destructive operations
-    # (which need an explicit opt-in scope each).
-    #   repo           : private+public read/write (issues, PRs, contents)
-    #   workflow       : edit .github/workflows/* (needed for CI changes)
-    #   notifications  : read+mark notifications
-    #   read:org       : see org membership for context resolution
-    #   read:user      : authenticated user profile
-    #   user:email     : user's email addresses
-    #   gist           : gists/list-for-user and friends
-    # Explicitly NOT included (add only when needed):
-    #   delete_repo, admin:org, admin:repo_hook, admin:public_key
-    scopes: repo workflow notifications read:org read:user user:email gist
+    client-id: Iv23li70Lfuicc09bB4l
+    pkce: true
+    install-url: https://github.com/apps/embabel/installations/new
     # GitHub /user endpoint returns the authenticated user's profile.
     # `login` is the canonical account id (unique, stable). `name` is
     # the display label shown in Connected Services.

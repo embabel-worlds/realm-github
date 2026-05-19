@@ -32,20 +32,20 @@ See `prompts/examples.md` for usage patterns.
 
 ## Auth
 
-GitHub OAuth App. One-time setup:
+GitHub App (`embabel`) + PKCE. Single Embabel-owned App, no per-deployment
+registration, no `client_secret`.
 
-1. Register an OAuth App at https://github.com/settings/developers.
-   Callback URL: `http://localhost:8042/api/v1/auth/oauth2/callback`
-   (single route for all providers; state carries provider id).
-2. Add the client_id / client_secret to `admin/oauth-apps.yml` under
-   key `gh`.
-3. In the assistant: Settings → Connected Services → Authorize for
-   GitHub. The token lands in the wallet credential store.
+In the assistant: Settings → Connected Services → Authorize for GitHub.
+First time on a given account, GitHub shows its install screen (pick repos)
+before consent. Token lands in the wallet credential store under
+`gh_OAUTH2#${login}` and rotates (~8h access, ~6mo refresh).
 
-Tokens are non-expiring (OAuth App, not GitHub App). To migrate to a
-GitHub App later (rotating short-lived tokens, fine-grained per-repo
-permissions, Checks API, `[bot]` actor identity) see "Future migration
-to GitHub App" in `notes/wallet.md` — mechanical change.
+To add or remove repos later, use the "Manage installation on GitHub" link
+in the same UI.
+
+Falling back to a self-registered OAuth App is still supported if an org
+admin policy blocks installing the Embabel App — see `pack-format` docs
+for the `pkce: false` + `client-secret` shape.
 
 ## Tag filter
 
