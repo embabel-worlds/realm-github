@@ -32,20 +32,20 @@ See `prompts/examples.md` for usage patterns.
 
 ## Auth
 
-GitHub OAuth App. One-time setup:
+GitHub OAuth. Two supported registrations: a classic **OAuth App** (simplest)
+or a **GitHub App** (fine-grained per-repo permissions, rotating tokens).
+Both expose the same user-to-server endpoints, so the setup is identical
+from the assistant's perspective.
 
-1. Register an OAuth App at https://github.com/settings/developers.
+1. Register an app at https://github.com/settings/developers.
    Callback URL: `http://localhost:8042/api/v1/auth/oauth2/callback`
-   (single route for all providers; state carries provider id).
-2. Add the client_id / client_secret to `admin/oauth-apps.yml` under
-   key `gh`.
-3. In the assistant: Settings → Connected Services → Authorize for
-   GitHub. The token lands in the wallet credential store.
-
-Tokens are non-expiring (OAuth App, not GitHub App). To migrate to a
-GitHub App later (rotating short-lived tokens, fine-grained per-repo
-permissions, Checks API, `[bot]` actor identity) see "Future migration
-to GitHub App" in `notes/wallet.md` — mechanical change.
+   (single route for all providers; state carries the provider id).
+2. In the assistant: open the drawer → Auth → Wallet → Provider
+   credentials. Paste `client_id` and `client_secret` under provider
+   `gh`. Both are encrypted client-side; the server holds no plaintext
+   copy.
+3. Settings → Connected Services → Authorize for GitHub. The access
+   token lands in the wallet under `gh_OAUTH2#${login}`.
 
 ## Tag filter
 

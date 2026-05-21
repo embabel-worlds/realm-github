@@ -6,19 +6,11 @@
 # Instead we pin an explicit operationIds allowlist of the ~15 ops that
 # cover ~95% of common chat tasks. Add more here when a need arises.
 #
-# Auth: GitHub OAuth App — non-expiring user-to-server tokens. The
-# user clicks Authorize once; tokens land in the wallet credential
-# store under `gh_OAUTH2#${login}`. To migrate to a GitHub App
-# (rotating short-lived tokens, fine-grained per-repo perms, Checks
-# API, [bot] identity) see the "Future migration to GitHub App"
-# section in notes/wallet.md — mechanical change.
-#
-# Setup (one-time, manual):
-#   1. Register an OAuth App at https://github.com/settings/developers
-#      with callback URL: http://localhost:8042/api/v1/auth/oauth2/callback
-#      (single route for all providers; state carries provider id).
-#   2. Add client_id / client_secret to admin/oauth-apps.yml under key
-#      `gh` (same name as this entry's `name:` field).
+# Auth: GitHub OAuth (OAuth App or GitHub App user-to-server flow).
+# Operator-supplied `client_id` + `client_secret` are stored in the
+# assistant's Wallet under provider name `gh`. Access tokens are
+# persisted under `gh_OAUTH2#${login}` after the user authorizes.
+# See README.md for setup.
 - url: "https://raw.githubusercontent.com/github/rest-api-description/main/descriptions/api.github.com/api.github.com.json"
   name: gh
   type: openapi
@@ -26,9 +18,8 @@
   oauth2:
     auth-url: https://github.com/login/oauth/authorize
     token-url: https://github.com/login/oauth/access_token
-    # Maximum reasonable scope — broad enough for any future assistant
-    # tool, narrow enough to exclude genuinely destructive operations
-    # (which need an explicit opt-in scope each).
+    # Maximum reasonable scope — broad enough for any assistant tool,
+    # narrow enough to exclude genuinely destructive operations.
     #   repo           : private+public read/write (issues, PRs, contents)
     #   workflow       : edit .github/workflows/* (needed for CI changes)
     #   notifications  : read+mark notifications
