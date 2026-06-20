@@ -47,3 +47,78 @@
     kind:         "'issue' or 'pull_request'"
     url:          "Web URL of the item"
     body_excerpt: "Body excerpt for LLM context"
+
+# GitHubCommitAuthor (eager commit-author mirror) REMOVED in the move to
+# on-demand integration (specs/VIRTUAL_CYPHER.md). It previously polled
+# repos/list-commits and merged authors onto :Person by email.
+#
+# On-demand commit-author virtualization is still deferred (no batched
+# commits-by-email endpoint). ISSUES, however, ARE batchable: GitHub issue search
+# OR-s multiple `author:` qualifiers in one `q`, so we virtualize them below.
+
+# Lightweight account anchor: links a canonical :Person to their GitHub login.
+# REAL (persisted), the bridge for on-demand GitHub joins. Populating it
+# (Person → login) is the operational prerequisite — e.g. a github user lookup —
+# analogous to a connected HubSpot account. No login data ⇒ no issues materialize.
+- name: GitHubIdentity
+  visibility: internal
+  userAnchor: false
+  description: "Links a canonical Person to their GitHub login; the bridge anchor for on-demand GitHub joins."
+  # Populated reliably for the CONNECTING user on OAuth authorize: the resolved
+  # GitHub login (apis.yml identity.account-id-field: login) becomes the
+  # GitHubIdentity, linked to the user's own Person (matched by email).
+  identityBridge:
+    provider: gh
+    relationship: HAS_GITHUB
+    linkFrom: Person
+  # Persisted enrichment (committed, not transient): for every Person with an
+  # email, fetch their GitHub login and persist (Person)-[:HAS_GITHUB]->(GitHubIdentity).
+  # Run by EnrichmentService. NOTE: the learned /search/users omits the email from
+  # results, so `githubUsersByEmail` must be a purpose-shaped handler that echoes
+  # the queried email in each record (recordKeyField=email) — otherwise results
+  # can't map back to the Person. No such handler yet ⇒ no logins populated.
+  virtualJoins:
+    - anchorLabel: Person
+      relationship: HAS_GITHUB
+      keyField: email
+      recordKeyField: email
+      producer: githubUsersByEmail
+      persist: true
+  properties:
+    login:
+      description: "GitHub login — identity, and the key issue search filters by (author:<login>)."
+      metadata:
+        identity: "true"
+    email:
+      description: "The Person email this login was resolved from (echoed by the producer)."
+
+# On-demand virtual node: a GitHub issue, fetched only when a query traverses to
+# it from a GitHubIdentity, materialized transiently, rolled back. Batched by the
+# `issuesByAuthor` producer (one search, `author:` OR-qualifiers), linked by
+# id-match on the login (GitHubIdentity.login == issue.user.login).
+#
+#   MATCH (me:AssistantUser)-[:EMAILED]->(p:Person)-[:HAS_GITHUB]->(g:GitHubIdentity)-[:RAISED]->(i:GitHubIssue)
+#   RETURN DISTINCT p.name
+- name: GitHubIssue
+  visibility: internal
+  userAnchor: false
+  description: "A GitHub issue, fetched on demand by author and linked to a GitHubIdentity."
+  virtualJoins:
+    - anchorLabel: GitHubIdentity
+      relationship: RAISED
+      keyField: login              # GitHubIdentity.login
+      recordKeyField: user.login   # issue record's author login (nested, id-match)
+      producer: issuesByAuthor
+    - anchorLabel: GitHubIdentity
+      relationship: ASSIGNED       # (g:GitHubIdentity)-[:ASSIGNED]->(i:GitHubIssue) = issues assigned to me
+      keyField: login
+      recordKeyField: assignee.login   # issue's primary assignee login (nested, id-match)
+      producer: issuesByAssignee
+  properties:
+    id:
+      description: "GitHub issue id — identity of the issue."
+      metadata:
+        identity: "true"
+    title: "Issue title."
+    number: "Issue number within its repo."
+    html_url: "Web URL of the issue."

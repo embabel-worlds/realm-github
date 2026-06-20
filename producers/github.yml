@@ -1,0 +1,44 @@
+# Virtual-join producers (see specs/VIRTUAL_CYPHER.md). Batch-keyed: all author
+# logins go into ONE GitHub issue search. GitHub OR-s repeated `author:`
+# qualifiers, so `keyTemplate: "author:{key}"` turns [alice, bob] into
+# "author:alice author:bob", substituted into the `{keys}` placeholder of `q` —
+# one call covers every anchor, no N+1.
+
+- name: issuesByAuthor
+  kind: api
+  operation: search/issues-and-pull-requests   # GET /search/issues (q)
+  records: "$.items[*]"
+  args:
+    q: "is:issue {keys}"
+  keyTemplate: "author:{key}"
+  keyJoin: " "
+  cache:
+    kind: ttl
+    seconds: 300
+
+# Issues assigned to an author login — same batched search, `assignee:` qualifier.
+- name: issuesByAssignee
+  kind: api
+  operation: search/issues-and-pull-requests
+  records: "$.items[*]"
+  args:
+    q: "is:issue {keys}"
+  keyTemplate: "assignee:{key}"
+  keyJoin: " "
+  cache:
+    kind: ttl
+    seconds: 300
+
+# Person email → GitHub login, for persisted GitHubIdentity enrichment. MUST be a
+# purpose-shaped handler that ECHOES the queried email in each record — GitHub's
+# learned /search/users returns login but not email, so a raw learned-API op
+# can't satisfy recordKeyField=email. Until such a handler ships, this resolves
+# to no tool (enrichment is a no-op, logged).
+- name: githubUsersByEmail
+  kind: api
+  operation: githubUserByEmail   # purpose-shaped pack handler, returns {email, login}
+  records: "$[*]"
+  keyArg: emails
+  cache:
+    kind: ttl
+    seconds: 86400
