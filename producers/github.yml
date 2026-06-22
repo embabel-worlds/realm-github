@@ -3,6 +3,13 @@
 # qualifiers, so `keyTemplate: "author:{key}"` turns [alice, bob] into
 # "author:alice author:bob", substituted into the `{keys}` placeholder of `q` —
 # one call covers every anchor, no N+1.
+#
+# per_page=100 (GitHub's max) + sort by most-recently-updated: a prolific login can
+# have thousands of matches and GitHub paginates, so the materialized set is the 100
+# most-recent. That makes counts over a focused/active repo correct, and lets a
+# cross-identity intersection (issues X raised that Y is assigned to) hit recent
+# overlaps. A login with >100 matches across ALL repos is still floor-capped — the
+# decompose-and-intersect model can't beat a single combined search for that.
 
 - name: issuesByAuthor
   kind: api
@@ -10,6 +17,9 @@
   records: "$.items[*]"
   args:
     q: "is:issue {keys}"
+    sort: updated
+    order: desc
+    per_page: 100
   keyTemplate: "author:{key}"
   keyJoin: " "
   cache:
@@ -23,6 +33,9 @@
   records: "$.items[*]"
   args:
     q: "is:issue {keys}"
+    sort: updated
+    order: desc
+    per_page: 100
   keyTemplate: "assignee:{key}"
   keyJoin: " "
   cache:
@@ -37,6 +50,9 @@
   records: "$.items[*]"
   args:
     q: "is:pr {keys}"
+    sort: updated
+    order: desc
+    per_page: 100
   keyTemplate: "author:{key}"
   keyJoin: " "
   cache:
@@ -49,6 +65,9 @@
   records: "$.items[*]"
   args:
     q: "is:pr {keys}"
+    sort: updated
+    order: desc
+    per_page: 100
   keyTemplate: "assignee:{key}"
   keyJoin: " "
   cache:
