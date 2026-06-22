@@ -46,6 +46,11 @@
     - issues/update
     - issues/list-comments
     - issues/create-comment
+    # Verb write-backs on a materialized GitHubIssue (src/api/issue.ts):
+    # add-labels / add-assignees are additive (idempotent per label/assignee),
+    # the honest fit for `issue.addLabels(...)` / `issue.assign(...)`.
+    - issues/add-labels
+    - issues/add-assignees
     # Pull requests
     - pulls/list
     - pulls/get
@@ -55,6 +60,10 @@
     - pulls/list-reviews
     - pulls/list-review-comments
     - pulls/merge
+    # Verb write-back on a materialized GitHubPullRequest (src/api/pull-request.ts).
+    # (close/reopen/comment/addLabels/assign reuse the issues/* ops above — a PR
+    # IS an issue for state, comments, labels and assignees.)
+    - pulls/request-reviewers
     # Repositories
     - repos/get
     - repos/list-for-user

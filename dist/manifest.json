@@ -1,0 +1,744 @@
+{
+  "version": 1,
+  "generatedAt": "2026-06-22T08:38:56.269Z",
+  "entries": [
+    {
+      "namespace": "issue",
+      "name": "addLabels",
+      "description": "Add labels (additive; GitHub ignores ones already present).",
+      "inputSchema": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "outputSchema": {},
+      "onType": "GitHubIssue",
+      "className": "GitHubIssue"
+    },
+    {
+      "namespace": "issue",
+      "name": "ageDays",
+      "description": "Days since the issue was opened.",
+      "inputSchema": {
+        "type": "number"
+      },
+      "outputSchema": {
+        "type": "number"
+      },
+      "onType": "GitHubIssue",
+      "className": "GitHubIssue"
+    },
+    {
+      "namespace": "issue",
+      "name": "assign",
+      "description": "Assign GitHub logins (additive; GitHub ignores ones already assigned).",
+      "inputSchema": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "outputSchema": {},
+      "onType": "GitHubIssue",
+      "className": "GitHubIssue"
+    },
+    {
+      "namespace": "issue",
+      "name": "close",
+      "description": "Close the issue. `reason` records why (GitHub `state_reason`). Idempotent.",
+      "inputSchema": {
+        "oneOf": [
+          {
+            "type": "string",
+            "const": "completed"
+          },
+          {
+            "type": "string",
+            "const": "not_planned"
+          }
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "number": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "html_url": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      },
+      "onType": "GitHubIssue",
+      "className": "GitHubIssue"
+    },
+    {
+      "namespace": "issue",
+      "name": "comment",
+      "description": "Add a comment.",
+      "inputSchema": {
+        "type": "string"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "html_url": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          }
+        }
+      },
+      "onType": "GitHubIssue",
+      "className": "GitHubIssue"
+    },
+    {
+      "namespace": "issue",
+      "name": "daysSinceUpdate",
+      "description": "Days since the issue was last touched.",
+      "inputSchema": {
+        "type": "number"
+      },
+      "outputSchema": {
+        "type": "number"
+      },
+      "onType": "GitHubIssue",
+      "className": "GitHubIssue"
+    },
+    {
+      "namespace": "issue",
+      "name": "isOpen",
+      "description": "",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "boolean"
+      },
+      "onType": "GitHubIssue",
+      "className": "GitHubIssue"
+    },
+    {
+      "namespace": "issue",
+      "name": "isStale",
+      "description": "Open and untouched for `days` (default 30) — a candidate for a nudge or close.",
+      "inputSchema": {
+        "type": "number"
+      },
+      "outputSchema": {
+        "type": "boolean"
+      },
+      "onType": "GitHubIssue",
+      "className": "GitHubIssue"
+    },
+    {
+      "namespace": "issue",
+      "name": "needsTriage",
+      "description": "Open, no comments, and older than `days` (default 7) — nobody has triaged it.",
+      "inputSchema": {
+        "type": "number"
+      },
+      "outputSchema": {
+        "type": "boolean"
+      },
+      "onType": "GitHubIssue",
+      "className": "GitHubIssue"
+    },
+    {
+      "namespace": "issue",
+      "name": "neighbors",
+      "description": "Who/what this entity is connected to, related to, or works with in the knowledge graph. Inherited by every pack type, so a new type is graph- navigable for free. Walks outward `hops` (1–3, default 1); optionally filter relationship types (CSV) and cap with `limit`. Returns the connected nodes nearest-first; empty if this node isn't persisted yet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "hops": {
+            "type": "number"
+          },
+          "relTypes": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "number"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "label": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "hops": {
+              "type": "number"
+            },
+            "relPath": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "id",
+            "label",
+            "hops"
+          ]
+        }
+      },
+      "onType": "GitHubIssue",
+      "className": "GitHubIssue"
+    },
+    {
+      "namespace": "issue",
+      "name": "ref",
+      "description": "Short human ref, e.g. `octocat/hello-world#42`.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "string"
+      },
+      "onType": "GitHubIssue",
+      "className": "GitHubIssue"
+    },
+    {
+      "namespace": "issue",
+      "name": "reopen",
+      "description": "Reopen the issue. Idempotent.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "number": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "html_url": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      },
+      "onType": "GitHubIssue",
+      "className": "GitHubIssue"
+    },
+    {
+      "namespace": "issue",
+      "name": "repoRef",
+      "description": "`owner`/`repo` parsed from `html_url`. Throws if it can't be located.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string"
+          },
+          "repo": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "owner",
+          "repo"
+        ]
+      },
+      "onType": "GitHubIssue",
+      "className": "GitHubIssue"
+    },
+    {
+      "namespace": "pull_request",
+      "name": "addLabels",
+      "description": "Add labels (additive; GitHub ignores ones already present).",
+      "inputSchema": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "outputSchema": {},
+      "onType": "GitHubPullRequest",
+      "className": "GitHubPullRequest"
+    },
+    {
+      "namespace": "pull_request",
+      "name": "ageDays",
+      "description": "Days since the PR was opened.",
+      "inputSchema": {
+        "type": "number"
+      },
+      "outputSchema": {
+        "type": "number"
+      },
+      "onType": "GitHubPullRequest",
+      "className": "GitHubPullRequest"
+    },
+    {
+      "namespace": "pull_request",
+      "name": "assign",
+      "description": "Assign GitHub logins (additive; distinct from reviewers).",
+      "inputSchema": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "outputSchema": {},
+      "onType": "GitHubPullRequest",
+      "className": "GitHubPullRequest"
+    },
+    {
+      "namespace": "pull_request",
+      "name": "close",
+      "description": "Close the PR without merging. `reason` records why. Idempotent.",
+      "inputSchema": {
+        "oneOf": [
+          {
+            "type": "string",
+            "const": "completed"
+          },
+          {
+            "type": "string",
+            "const": "not_planned"
+          }
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "number": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "draft": {
+            "oneOf": [
+              {
+                "type": "undefined"
+              },
+              {
+                "type": "undefined"
+              }
+            ]
+          },
+          "merged": {
+            "oneOf": [
+              {
+                "type": "undefined"
+              },
+              {
+                "type": "undefined"
+              }
+            ]
+          },
+          "html_url": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      },
+      "onType": "GitHubPullRequest",
+      "className": "GitHubPullRequest"
+    },
+    {
+      "namespace": "pull_request",
+      "name": "comment",
+      "description": "Add a comment (PR comments go through the issues endpoint).",
+      "inputSchema": {
+        "type": "string"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "html_url": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          }
+        }
+      },
+      "onType": "GitHubPullRequest",
+      "className": "GitHubPullRequest"
+    },
+    {
+      "namespace": "pull_request",
+      "name": "daysSinceUpdate",
+      "description": "Days since the PR was last touched.",
+      "inputSchema": {
+        "type": "number"
+      },
+      "outputSchema": {
+        "type": "number"
+      },
+      "onType": "GitHubPullRequest",
+      "className": "GitHubPullRequest"
+    },
+    {
+      "namespace": "pull_request",
+      "name": "isDraft",
+      "description": "A work-in-progress PR not yet ready for review.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "boolean"
+      },
+      "onType": "GitHubPullRequest",
+      "className": "GitHubPullRequest"
+    },
+    {
+      "namespace": "pull_request",
+      "name": "isOpen",
+      "description": "",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "boolean"
+      },
+      "onType": "GitHubPullRequest",
+      "className": "GitHubPullRequest"
+    },
+    {
+      "namespace": "pull_request",
+      "name": "isReadyForReview",
+      "description": "Open and out of draft — a reviewer can act on it now.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "boolean"
+      },
+      "onType": "GitHubPullRequest",
+      "className": "GitHubPullRequest"
+    },
+    {
+      "namespace": "pull_request",
+      "name": "isStale",
+      "description": "Open and untouched for `days` (default 14) — a candidate for a nudge.",
+      "inputSchema": {
+        "type": "number"
+      },
+      "outputSchema": {
+        "type": "boolean"
+      },
+      "onType": "GitHubPullRequest",
+      "className": "GitHubPullRequest"
+    },
+    {
+      "namespace": "pull_request",
+      "name": "merge",
+      "description": "Merge the PR. `method` selects merge/squash/rebase (default squash).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "oneOf": [
+              {
+                "type": "string",
+                "const": "merge"
+              },
+              {
+                "type": "string",
+                "const": "squash"
+              },
+              {
+                "type": "string",
+                "const": "rebase"
+              }
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "sha": {
+            "type": "string"
+          },
+          "merged": {
+            "oneOf": [
+              {
+                "type": "undefined"
+              },
+              {
+                "type": "undefined"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "onType": "GitHubPullRequest",
+      "className": "GitHubPullRequest"
+    },
+    {
+      "namespace": "pull_request",
+      "name": "neighbors",
+      "description": "Who/what this entity is connected to, related to, or works with in the knowledge graph. Inherited by every pack type, so a new type is graph- navigable for free. Walks outward `hops` (1–3, default 1); optionally filter relationship types (CSV) and cap with `limit`. Returns the connected nodes nearest-first; empty if this node isn't persisted yet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "hops": {
+            "type": "number"
+          },
+          "relTypes": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "number"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "label": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "hops": {
+              "type": "number"
+            },
+            "relPath": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "id",
+            "label",
+            "hops"
+          ]
+        }
+      },
+      "onType": "GitHubPullRequest",
+      "className": "GitHubPullRequest"
+    },
+    {
+      "namespace": "pull_request",
+      "name": "ref",
+      "description": "Short human ref, e.g. `octocat/hello-world#42`.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "string"
+      },
+      "onType": "GitHubPullRequest",
+      "className": "GitHubPullRequest"
+    },
+    {
+      "namespace": "pull_request",
+      "name": "reopen",
+      "description": "Reopen the PR. Idempotent.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "number": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "draft": {
+            "oneOf": [
+              {
+                "type": "undefined"
+              },
+              {
+                "type": "undefined"
+              }
+            ]
+          },
+          "merged": {
+            "oneOf": [
+              {
+                "type": "undefined"
+              },
+              {
+                "type": "undefined"
+              }
+            ]
+          },
+          "html_url": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      },
+      "onType": "GitHubPullRequest",
+      "className": "GitHubPullRequest"
+    },
+    {
+      "namespace": "pull_request",
+      "name": "repoRef",
+      "description": "`owner`/`repo` parsed from `html_url`. Throws if it can't be located.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string"
+          },
+          "repo": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "owner",
+          "repo"
+        ]
+      },
+      "onType": "GitHubPullRequest",
+      "className": "GitHubPullRequest"
+    },
+    {
+      "namespace": "pull_request",
+      "name": "requestReviewers",
+      "description": "Request reviews from GitHub logins (additive).",
+      "inputSchema": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "number": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "draft": {
+            "oneOf": [
+              {
+                "type": "undefined"
+              },
+              {
+                "type": "undefined"
+              }
+            ]
+          },
+          "merged": {
+            "oneOf": [
+              {
+                "type": "undefined"
+              },
+              {
+                "type": "undefined"
+              }
+            ]
+          },
+          "html_url": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      },
+      "onType": "GitHubPullRequest",
+      "className": "GitHubPullRequest"
+    }
+  ]
+}

@@ -121,4 +121,53 @@
         identity: "true"
     title: "Issue title."
     number: "Issue number within its repo."
-    html_url: "Web URL of the issue."
+    html_url: "Web URL of the issue (owner/repo parse out of this for write-backs)."
+    # Scalar search-item fields the verb class (src/api/issue.ts) reads. They
+    # persist automatically — the materializer stores every scalar in the record;
+    # declaring them here just makes them visible in the schema. (Nested fields
+    # like `labels`/`assignees`/`user` are object/array-of-object and are NOT
+    # stored, so verbs derive triage from these scalars, not from labels.)
+    state: "'open' or 'closed'."
+    created_at: "ISO-8601 creation timestamp."
+    updated_at: "ISO-8601 last-update timestamp."
+    comments: "Number of comments on the issue."
+
+# On-demand virtual node: a GitHub pull request, the PR-shaped sibling of
+# GitHubIssue. Batched by the `pullsByAuthor` / `pullsByAssignee` producers
+# (one `is:pr` search, `author:`/`assignee:` OR-qualifiers), linked by id-match
+# on the login. A PR IS an issue for state/comments/labels/assignees, so its
+# verbs (src/api/pull-request.ts) reuse the issues/* ops for those and add
+# pulls/* for merge + review requests.
+#
+#   MATCH (me:AssistantUser)-[:EMAILED]->(p:Person)-[:HAS_GITHUB]->(g:GitHubIdentity)-[:OPENED]->(pr:GitHubPullRequest)
+#   RETURN DISTINCT p.name
+- name: GitHubPullRequest
+  visibility: internal
+  userAnchor: false
+  description: "A GitHub pull request, fetched on demand by author/assignee and linked to a GitHubIdentity."
+  virtualJoins:
+    - anchorLabel: GitHubIdentity
+      relationship: OPENED         # (g:GitHubIdentity)-[:OPENED]->(pr) = PRs this login authored
+      keyField: login
+      recordKeyField: user.login   # PR record's author login (nested, id-match)
+      producer: pullsByAuthor
+    - anchorLabel: GitHubIdentity
+      relationship: ASSIGNED       # PRs assigned to this login
+      keyField: login
+      recordKeyField: assignee.login
+      producer: pullsByAssignee
+  properties:
+    id:
+      description: "GitHub pull-request id — identity of the PR."
+      metadata:
+        identity: "true"
+    title: "PR title."
+    number: "PR number within its repo (the pulls/* ops' pull_number)."
+    html_url: "Web URL of the PR (owner/repo parse out of this for write-backs)."
+    # Scalar search-item fields the verb class reads (persist automatically; see
+    # the GitHubIssue note). `draft` distinguishes a work-in-progress PR.
+    state: "'open' or 'closed'."
+    draft: "True while the PR is a draft (not ready for review)."
+    created_at: "ISO-8601 creation timestamp."
+    updated_at: "ISO-8601 last-update timestamp."
+    comments: "Number of comments on the PR."

@@ -29,6 +29,32 @@
     kind: ttl
     seconds: 300
 
+# Pull requests, same batched search but `is:pr`. Mirror of the issue producers
+# so a GitHubPullRequest materializes by author / assignee off a GitHubIdentity.
+- name: pullsByAuthor
+  kind: api
+  operation: search/issues-and-pull-requests
+  records: "$.items[*]"
+  args:
+    q: "is:pr {keys}"
+  keyTemplate: "author:{key}"
+  keyJoin: " "
+  cache:
+    kind: ttl
+    seconds: 300
+
+- name: pullsByAssignee
+  kind: api
+  operation: search/issues-and-pull-requests
+  records: "$.items[*]"
+  args:
+    q: "is:pr {keys}"
+  keyTemplate: "assignee:{key}"
+  keyJoin: " "
+  cache:
+    kind: ttl
+    seconds: 300
+
 # Person email → GitHub login, for persisted GitHubIdentity enrichment. MUST be a
 # purpose-shaped handler that ECHOES the queried email in each record — GitHub's
 # learned /search/users returns login but not email, so a raw learned-API op
