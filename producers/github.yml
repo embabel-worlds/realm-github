@@ -1,43 +1,54 @@
-# Virtual-join producers (see specs/VIRTUAL_CYPHER.md). Batch-keyed: all author
-# logins go into ONE GitHub issue search. GitHub OR-s repeated `author:`
-# qualifiers, so `keyTemplate: "author:{key}"` turns [alice, bob] into
-# "author:alice author:bob", substituted into the `{keys}` placeholder of `q` —
-# one call covers every anchor, no N+1.
+# Virtual-join producers (see specs/VIRTUAL_CYPHER.md). These are RemoteRepositories
+# (kind: remote; `api` still accepted as an alias) — keyed batch readers over an external
+# store, in the Spring Data sense. Batch-keyed: all author logins go into ONE GitHub issue
+# search. GitHub OR-s repeated `author:` qualifiers, so `keyTemplate: "author:{key}"` turns
+# [alice, bob] into "author:alice author:bob", substituted into the `{keys}` placeholder of
+# `q` — one call covers every anchor, no N+1.
 #
-# per_page=100 (GitHub's max) + sort by most-recently-updated: a prolific login can
-# have thousands of matches and GitHub paginates, so the materialized set is the 100
-# most-recent. That makes counts over a focused/active repo correct, and lets a
-# cross-identity intersection (issues X raised that Y is assigned to) hit recent
-# overlaps. A login with >100 matches across ALL repos is still floor-capped — the
-# decompose-and-intersect model can't beat a single combined search for that.
+# per_page=100 (GitHub's max) + sort by most-recently-updated bounds an unscoped fetch.
+#
+# PREDICATE PUSHDOWN (Level 1): a query predicate on the materialized issue/PR — e.g.
+# `WHERE i.html_url CONTAINS 'embabel/me'` — is rendered by the `pushdown` rules into a native
+# GitHub `repo:owner/name` qualifier and substituted for `{filters}` in `q`. This scopes the
+# search AT THE SOURCE (e.g. `repo:embabel/me author:johnsonr`, ~dozens) instead of fetching a
+# prolific login's thousands and intersecting in the graph. `valuePattern` pulls `owner/repo`
+# out of whatever URL form the predicate used. Predicates with no rule still filter graph-side.
 
 - name: issuesByAuthor
-  kind: api
+  kind: remote
   operation: search/issues-and-pull-requests   # GET /search/issues (q)
   records: "$.items[*]"
   args:
-    q: "is:issue {keys}"
+    q: "is:issue {keys} {filters}"
     sort: updated
     order: desc
     per_page: 100
   keyTemplate: "author:{key}"
   keyJoin: " "
+  pushdown:
+    - property: html_url
+      qualifier: "repo:{value}"
+      valuePattern: '(?:github\.com/|repos/)?([\w.-]+/[\w.-]+?)(?:/|$)'
   cache:
     kind: ttl
     seconds: 300
 
 # Issues assigned to an author login — same batched search, `assignee:` qualifier.
 - name: issuesByAssignee
-  kind: api
+  kind: remote
   operation: search/issues-and-pull-requests
   records: "$.items[*]"
   args:
-    q: "is:issue {keys}"
+    q: "is:issue {keys} {filters}"
     sort: updated
     order: desc
     per_page: 100
   keyTemplate: "assignee:{key}"
   keyJoin: " "
+  pushdown:
+    - property: html_url
+      qualifier: "repo:{value}"
+      valuePattern: '(?:github\.com/|repos/)?([\w.-]+/[\w.-]+?)(?:/|$)'
   cache:
     kind: ttl
     seconds: 300
@@ -45,31 +56,39 @@
 # Pull requests, same batched search but `is:pr`. Mirror of the issue producers
 # so a GitHubPullRequest materializes by author / assignee off a GitHubIdentity.
 - name: pullsByAuthor
-  kind: api
+  kind: remote
   operation: search/issues-and-pull-requests
   records: "$.items[*]"
   args:
-    q: "is:pr {keys}"
+    q: "is:pr {keys} {filters}"
     sort: updated
     order: desc
     per_page: 100
   keyTemplate: "author:{key}"
   keyJoin: " "
+  pushdown:
+    - property: html_url
+      qualifier: "repo:{value}"
+      valuePattern: '(?:github\.com/|repos/)?([\w.-]+/[\w.-]+?)(?:/|$)'
   cache:
     kind: ttl
     seconds: 300
 
 - name: pullsByAssignee
-  kind: api
+  kind: remote
   operation: search/issues-and-pull-requests
   records: "$.items[*]"
   args:
-    q: "is:pr {keys}"
+    q: "is:pr {keys} {filters}"
     sort: updated
     order: desc
     per_page: 100
   keyTemplate: "assignee:{key}"
   keyJoin: " "
+  pushdown:
+    - property: html_url
+      qualifier: "repo:{value}"
+      valuePattern: '(?:github\.com/|repos/)?([\w.-]+/[\w.-]+?)(?:/|$)'
   cache:
     kind: ttl
     seconds: 300
@@ -80,7 +99,7 @@
 # can't satisfy recordKeyField=email. Until such a handler ships, this resolves
 # to no tool (enrichment is a no-op, logged).
 - name: githubUsersByEmail
-  kind: api
+  kind: remote
   operation: githubUserByEmail   # purpose-shaped pack handler, returns {email, login}
   records: "$[*]"
   keyArg: emails
