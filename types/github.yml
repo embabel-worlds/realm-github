@@ -80,10 +80,17 @@
   virtualJoins:
     - anchorLabel: Person
       relationship: HAS_GITHUB
-      keyField: email
+      keyField: primaryEmail   # anchor key for the pre-pass probe; resolve chain owns the rest
       recordKeyField: email
       producer: githubUsersByEmail
-      persist: true
+      # Write-through identity bridge resolved lazily for ANY person the query names. Tried in order:
+      writeThrough: true
+      resolve:
+        - existingBridge                                       # respect a fresh GitHubIdentity already linked
+        - learnedHandle: { property: githubLogin, as: login }  # else an explicitly-learned login on the Person
+        - canonicalEmail: { producer: githubUsersByEmail }     # else resolve via the Person's email set
+      # NOTE: the `githubUserByEmail` op still has no gateway tool, so the canonicalEmail rule yields
+      # nothing for GitHub until that handler ships; existingBridge + learnedHandle work today.
   properties:
     login:
       description: "GitHub login — identity, and the key issue search filters by (author:<login>)."
