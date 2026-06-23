@@ -1,6 +1,6 @@
 name: github
 description: "GitHub integration — typed via the official OpenAPI 3 spec, so the LLM sees full request AND response types and doesn't have to guess pagination shape, field names, or wrapper-vs-array. Bundles a `github-workflows` Agent Skill that teaches the workflow patterns (search-then-get, paginate safely, common pitfalls) — invaluable for smaller chat models."
-version: 0.3.0
+version: 0.5.0
 author: Rod Johnson
 url: https://github.com/johnsonr/pack-github
 tags:

@@ -1,30 +1,94 @@
-# Virtual-join producers (see specs/VIRTUAL_CYPHER.md). Batch-keyed: all author
-# logins go into ONE GitHub issue search. GitHub OR-s repeated `author:`
-# qualifiers, so `keyTemplate: "author:{key}"` turns [alice, bob] into
-# "author:alice author:bob", substituted into the `{keys}` placeholder of `q` —
-# one call covers every anchor, no N+1.
+# Virtual-join producers (see specs/VIRTUAL_CYPHER.md). These are RemoteRepositories
+# (kind: remote; `api` still accepted as an alias) — keyed batch readers over an external
+# store, in the Spring Data sense. Batch-keyed: all author logins go into ONE GitHub issue
+# search. GitHub OR-s repeated `author:` qualifiers, so `keyTemplate: "author:{key}"` turns
+# [alice, bob] into "author:alice author:bob", substituted into the `{keys}` placeholder of
+# `q` — one call covers every anchor, no N+1.
+#
+# PREDICATE PUSHDOWN (Level 1): a query predicate on the materialized issue/PR — e.g.
+# `WHERE i.html_url CONTAINS 'embabel/me'` — is rendered by the `pushdown` rules into a native
+# GitHub `repo:owner/name` qualifier and substituted for `{filters}` in `q`, scoping the search
+# AT THE SOURCE. `valuePattern` pulls `owner/repo` out of whatever URL form the predicate used.
+#
+# PAGINATION: `paging:` walks pages (sort=updated, size 100, up to maxPages) so a repo-scoped
+# search that exceeds one page (e.g. an author's 249 issues) is fully captured — without it the
+# fetch would floor-cap at the first 100 and a cross-identity intersection could miss matches.
 
 - name: issuesByAuthor
-  kind: api
+  kind: remote
   operation: search/issues-and-pull-requests   # GET /search/issues (q)
   records: "$.items[*]"
   args:
-    q: "is:issue {keys}"
+    q: "is:issue {keys} {filters}"
+    sort: updated
+    order: desc
   keyTemplate: "author:{key}"
   keyJoin: " "
+  pushdown:
+    - property: html_url
+      qualifier: "repo:{value}"
+      valuePattern: '(?:github\.com/|repos/)?([\w.-]+/[\w.-]+?)(?:/|$)'
+  paging: { style: page, size: 100, maxPages: 10 }
   cache:
     kind: ttl
     seconds: 300
 
 # Issues assigned to an author login — same batched search, `assignee:` qualifier.
 - name: issuesByAssignee
-  kind: api
+  kind: remote
   operation: search/issues-and-pull-requests
   records: "$.items[*]"
   args:
-    q: "is:issue {keys}"
+    q: "is:issue {keys} {filters}"
+    sort: updated
+    order: desc
   keyTemplate: "assignee:{key}"
   keyJoin: " "
+  pushdown:
+    - property: html_url
+      qualifier: "repo:{value}"
+      valuePattern: '(?:github\.com/|repos/)?([\w.-]+/[\w.-]+?)(?:/|$)'
+  paging: { style: page, size: 100, maxPages: 10 }
+  cache:
+    kind: ttl
+    seconds: 300
+
+# Pull requests, same batched search but `is:pr`. Mirror of the issue producers
+# so a GitHubPullRequest materializes by author / assignee off a GitHubIdentity.
+- name: pullsByAuthor
+  kind: remote
+  operation: search/issues-and-pull-requests
+  records: "$.items[*]"
+  args:
+    q: "is:pr {keys} {filters}"
+    sort: updated
+    order: desc
+  keyTemplate: "author:{key}"
+  keyJoin: " "
+  pushdown:
+    - property: html_url
+      qualifier: "repo:{value}"
+      valuePattern: '(?:github\.com/|repos/)?([\w.-]+/[\w.-]+?)(?:/|$)'
+  paging: { style: page, size: 100, maxPages: 10 }
+  cache:
+    kind: ttl
+    seconds: 300
+
+- name: pullsByAssignee
+  kind: remote
+  operation: search/issues-and-pull-requests
+  records: "$.items[*]"
+  args:
+    q: "is:pr {keys} {filters}"
+    sort: updated
+    order: desc
+  keyTemplate: "assignee:{key}"
+  keyJoin: " "
+  pushdown:
+    - property: html_url
+      qualifier: "repo:{value}"
+      valuePattern: '(?:github\.com/|repos/)?([\w.-]+/[\w.-]+?)(?:/|$)'
+  paging: { style: page, size: 100, maxPages: 10 }
   cache:
     kind: ttl
     seconds: 300
@@ -35,7 +99,7 @@
 # can't satisfy recordKeyField=email. Until such a handler ships, this resolves
 # to no tool (enrichment is a no-op, logged).
 - name: githubUsersByEmail
-  kind: api
+  kind: remote
   operation: githubUserByEmail   # purpose-shaped pack handler, returns {email, login}
   records: "$[*]"
   keyArg: emails
