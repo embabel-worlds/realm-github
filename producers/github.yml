@@ -5,14 +5,14 @@
 # [alice, bob] into "author:alice author:bob", substituted into the `{keys}` placeholder of
 # `q` — one call covers every anchor, no N+1.
 #
-# per_page=100 (GitHub's max) + sort by most-recently-updated bounds an unscoped fetch.
-#
 # PREDICATE PUSHDOWN (Level 1): a query predicate on the materialized issue/PR — e.g.
 # `WHERE i.html_url CONTAINS 'embabel/me'` — is rendered by the `pushdown` rules into a native
-# GitHub `repo:owner/name` qualifier and substituted for `{filters}` in `q`. This scopes the
-# search AT THE SOURCE (e.g. `repo:embabel/me author:johnsonr`, ~dozens) instead of fetching a
-# prolific login's thousands and intersecting in the graph. `valuePattern` pulls `owner/repo`
-# out of whatever URL form the predicate used. Predicates with no rule still filter graph-side.
+# GitHub `repo:owner/name` qualifier and substituted for `{filters}` in `q`, scoping the search
+# AT THE SOURCE. `valuePattern` pulls `owner/repo` out of whatever URL form the predicate used.
+#
+# PAGINATION: `paging:` walks pages (sort=updated, size 100, up to maxPages) so a repo-scoped
+# search that exceeds one page (e.g. an author's 249 issues) is fully captured — without it the
+# fetch would floor-cap at the first 100 and a cross-identity intersection could miss matches.
 
 - name: issuesByAuthor
   kind: remote
@@ -22,13 +22,13 @@
     q: "is:issue {keys} {filters}"
     sort: updated
     order: desc
-    per_page: 100
   keyTemplate: "author:{key}"
   keyJoin: " "
   pushdown:
     - property: html_url
       qualifier: "repo:{value}"
       valuePattern: '(?:github\.com/|repos/)?([\w.-]+/[\w.-]+?)(?:/|$)'
+  paging: { style: page, size: 100, maxPages: 10 }
   cache:
     kind: ttl
     seconds: 300
@@ -42,13 +42,13 @@
     q: "is:issue {keys} {filters}"
     sort: updated
     order: desc
-    per_page: 100
   keyTemplate: "assignee:{key}"
   keyJoin: " "
   pushdown:
     - property: html_url
       qualifier: "repo:{value}"
       valuePattern: '(?:github\.com/|repos/)?([\w.-]+/[\w.-]+?)(?:/|$)'
+  paging: { style: page, size: 100, maxPages: 10 }
   cache:
     kind: ttl
     seconds: 300
@@ -63,13 +63,13 @@
     q: "is:pr {keys} {filters}"
     sort: updated
     order: desc
-    per_page: 100
   keyTemplate: "author:{key}"
   keyJoin: " "
   pushdown:
     - property: html_url
       qualifier: "repo:{value}"
       valuePattern: '(?:github\.com/|repos/)?([\w.-]+/[\w.-]+?)(?:/|$)'
+  paging: { style: page, size: 100, maxPages: 10 }
   cache:
     kind: ttl
     seconds: 300
@@ -82,13 +82,13 @@
     q: "is:pr {keys} {filters}"
     sort: updated
     order: desc
-    per_page: 100
   keyTemplate: "assignee:{key}"
   keyJoin: " "
   pushdown:
     - property: html_url
       qualifier: "repo:{value}"
       valuePattern: '(?:github\.com/|repos/)?([\w.-]+/[\w.-]+?)(?:/|$)'
+  paging: { style: page, size: 100, maxPages: 10 }
   cache:
     kind: ttl
     seconds: 300
