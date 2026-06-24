@@ -1,18 +1,26 @@
 # Virtual-join producers (see specs/VIRTUAL_CYPHER.md). These are RemoteRepositories
-# (kind: remote; `api` still accepted as an alias) — keyed batch readers over an external
-# store, in the Spring Data sense. Batch-keyed: all author logins go into ONE GitHub issue
-# search. GitHub OR-s repeated `author:` qualifiers, so `keyTemplate: "author:{key}"` turns
-# [alice, bob] into "author:alice author:bob", substituted into the `{keys}` placeholder of
-# `q` — one call covers every anchor, no N+1.
+# (kind: remote; `api` still accepted as an alias) — keyed readers over an external store,
+# in the Spring Data sense.
+#
+# ONE AUTHOR PER CALL (`batchSafe: false`). GitHub's issue search returns a SINGLE global
+# list sorted by `updated` desc, capped at `maxPages * size` (1000) results. OR-batching
+# authors (`author:alice author:bob`) into one call therefore STARVES a low-volume author:
+# a prolific author's recent issues fill the 1000-result cap and a colleague's single old
+# issue falls off the end — so "who raised issues I email" can list someone whom the
+# follow-up "what did they raise" then finds nothing for (the answer even shifts with WHICH
+# authors share the batch). Per-author fetch gives every login its own 1000-result budget,
+# so results are complete per author and the two questions always agree. The cost is N calls
+# for N authors; the resolution optimizer budgets that against the rate bucket. `batchSafe: false`
+# is a declared CAPABILITY (the engine derives one-key-per-call from it), not a magic batch size.
 #
 # PREDICATE PUSHDOWN (Level 1): a query predicate on the materialized issue/PR — e.g.
 # `WHERE i.html_url CONTAINS 'embabel/me'` — is rendered by the `pushdown` rules into a native
 # GitHub `repo:owner/name` qualifier and substituted for `{filters}` in `q`, scoping the search
 # AT THE SOURCE. `valuePattern` pulls `owner/repo` out of whatever URL form the predicate used.
 #
-# PAGINATION: `paging:` walks pages (sort=updated, size 100, up to maxPages) so a repo-scoped
-# search that exceeds one page (e.g. an author's 249 issues) is fully captured — without it the
-# fetch would floor-cap at the first 100 and a cross-identity intersection could miss matches.
+# PAGINATION: `paging:` walks pages (sort=updated, size 100, up to maxPages) so an author whose
+# issues exceed one page (e.g. 249 issues) is fully captured — without it the fetch would
+# floor-cap at the first 100 and a cross-identity intersection could miss matches.
 
 - name: issuesByAuthor
   kind: remote
@@ -24,6 +32,7 @@
     order: desc
   keyTemplate: "author:{key}"
   keyJoin: " "
+  batchSafe: false             # globally-ranked, capped search → engine fetches one author per call
   pushdown:
     - property: html_url
       qualifier: "repo:{value}"
@@ -44,6 +53,7 @@
     order: desc
   keyTemplate: "assignee:{key}"
   keyJoin: " "
+  batchSafe: false             # globally-ranked, capped search → engine fetches one author per call
   pushdown:
     - property: html_url
       qualifier: "repo:{value}"
@@ -65,6 +75,7 @@
     order: desc
   keyTemplate: "author:{key}"
   keyJoin: " "
+  batchSafe: false             # globally-ranked, capped search → engine fetches one author per call
   pushdown:
     - property: html_url
       qualifier: "repo:{value}"
@@ -84,6 +95,7 @@
     order: desc
   keyTemplate: "assignee:{key}"
   keyJoin: " "
+  batchSafe: false             # globally-ranked, capped search → engine fetches one author per call
   pushdown:
     - property: html_url
       qualifier: "repo:{value}"
