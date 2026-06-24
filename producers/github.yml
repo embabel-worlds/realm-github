@@ -107,6 +107,11 @@
   keyTemplate: "{key} in:email"   # q = "<email> in:email" (one email per call)
   echoKeyAs: email                # stamp the queried email onto each {login,...} hit
   records: "$.items[*]"           # search response is { items: [ {login, id, ...} ] }
+  cost:                           # the optimizer budgets around this: rate-limited search bucket,
+    bucket: github-search         # one call per email, and most emails are private (low yield)
+    rate: 30/min
+    batch: false
+    yield: low
   cache:
     kind: ttl
     seconds: 86400
