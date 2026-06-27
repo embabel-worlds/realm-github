@@ -82,19 +82,27 @@
     provider: gh
     relationship: HAS_GITHUB
     linkFrom: Person
-  # Persisted enrichment (committed, not transient): for every Person with an
-  # email, fetch their GitHub login and persist (Person)-[:HAS_GITHUB]->(GitHubIdentity).
-  # Run by EnrichmentService. `githubUsersByEmail` (producers/github.yml) uses the learned
-  # /search/users op with `echoKeyAs: email` — the engine stamps the queried email back onto each
-  # result (search/users omits it), so records map to the Person by recordKeyField=email. Only
-  # PUBLIC-email GitHub users resolve (a GitHub search limitation, not a bug).
+  # LAZY write-through identity bridge, resolved at QUERY time for ANY Person a query names — and crucially
+  # via the person's FULL email set. A person has many emails (work, personal, aliases) and GitHub may only
+  # know them by ONE of them; the resolve chain tries them all:
+  #   1. existingBridge   — respect a GitHubIdentity already linked (incl. learned/manual), no re-fetch;
+  #   2. learnedHandle    — an explicit Person.githubLogin (set it for people whose GitHub email is private);
+  #   3. canonicalEmail   — search GitHub by EVERY one of the person's emails (canonicalResolve →
+  #                         identitiesFor), linking via whichever address is public on their profile.
+  # `githubUsersByEmail` (producers/github.yml) uses the learned /search/users op with `echoKeyAs: email`,
+  # which stamps the queried email back onto each result so records map to the Person by recordKeyField.
+  # Resolved bridges are persisted (write-through warm cache). Replaces the old eager `persist:true` path,
+  # which only ever tried a single `email` property — missing multi-email people.
   virtualJoins:
     - anchorLabel: Person
       relationship: HAS_GITHUB
       keyField: email
       recordKeyField: email
       producer: githubUsersByEmail
-      persist: true
+      resolve:
+        - existingBridge
+        - learnedHandle: { property: githubLogin }
+        - canonicalEmail: { producer: githubUsersByEmail }
   properties:
     login:
       description: "GitHub login — identity, and the key issue search filters by (author:<login>)."
