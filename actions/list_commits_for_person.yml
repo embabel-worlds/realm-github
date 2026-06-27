@@ -1,0 +1,31 @@
+# Action-exposes the GitHub `repos/list-commits` READ op as a planner action
+# (assistant ACTIONS_FROM_CODE.md §16). Connectivity is THIS pack's gateway
+# (gateway.gh.*, typed from the OpenAPI spec) — no Kotlin client. The host
+# resolves the FQN stepType via NameOrClassTypeIdResolver and emits a
+# gateway-routed action, the same way `actions/policy_*.yml` emit PolicyActionSpecs
+# and the `GitHubCommitAuthor` type's `population:` block drives the gateway.
+#
+# Read-only → the planner may run it unattended. It consumes a Person and produces
+# that person's commit activity; the host's CardinalityInserter fans it out when the
+# upstream is a collection of people.
+
+stepType: com.embabel.assistant.plan.code.GatewayActionSpec
+name: listCommitsForPerson
+description: A person's recent GitHub commit activity — answers who is active or contributing on GitHub
+
+inputTypeNames:
+  - Person
+outputTypeName: CommitActivity
+
+tool: repos_list-commits
+readOnly: true
+# One CommitActivity per person (the person's commit list). The host fans this
+# out over the people collection — single-level map, not nested.
+outputCardinality: one
+
+# owner/repo are literals for the watched repo; author projects the Person's email
+# (the public commit-author filter — the cross-source identity key).
+args:
+  owner: embabel
+  repo: embabel-agent
+  author: "$email"

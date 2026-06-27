@@ -105,16 +105,22 @@
     kind: ttl
     seconds: 300
 
-# Person email → GitHub login, for persisted GitHubIdentity enrichment. MUST be a
-# purpose-shaped handler that ECHOES the queried email in each record — GitHub's
-# learned /search/users returns login but not email, so a raw learned-API op
-# can't satisfy recordKeyField=email. Until such a handler ships, this resolves
-# to no tool (enrichment is a no-op, logged).
+# Person email → GitHub login, for persisted GitHubIdentity enrichment. Uses the learned GitHub
+# `search/users` op (in apis.yml's allowlist) with `echoKeyAs: email`: GitHub's /search/users
+# returns `login` but NOT the queried email, so the backend calls it ONE email per call and stamps
+# the queried email back onto each record — satisfying the join's recordKeyField=email so results
+# map to the Person. No custom handler needed; the engine's echo mechanism supplies the missing key.
+# NOTE: GitHub user-search only finds users whose email is PUBLIC on their profile — a private-email
+# user won't resolve here (a GitHub limitation, not a bug). The bridge tries the person's FULL email
+# set, so any public address resolves them.
 - name: githubUsersByEmail
   kind: remote
-  operation: githubUserByEmail   # purpose-shaped pack handler, returns {email, login}
-  records: "$[*]"
-  keyArg: emails
+  operation: search/users        # GET /search/users?q=<email>+in:email
+  records: "$.items[*]"
+  args:
+    q: "{keys}"
+  keyTemplate: "{key} in:email"
+  echoKeyAs: email               # /search/users omits the queried email — stamp it back per call
   cache:
     kind: ttl
     seconds: 86400

@@ -37,6 +37,8 @@
       order: "asc"
     cursor:
       from: "$.updated_at"
+      # First run has no cursor; GitHub rejects `updated:>=*`, so floor at a valid ISO date.
+      initial: "2020-01-01T00:00:00Z"
     mapping:
       id:           "$.id"
       occurredAt:   "$.updated_at"

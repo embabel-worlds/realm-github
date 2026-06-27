@@ -1,3 +1,6 @@
 node_modules/
 dist/
 .idea/
+
+# Downloaded OpenAPI spec cache (fetched at runtime via apis.yml URL) — 12MB, not source.
+apis/api.github.com.json

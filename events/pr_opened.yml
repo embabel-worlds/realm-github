@@ -1,0 +1,41 @@
+# Event source for github.pull_request_opened signals — a NEW pull request opened in the embabel org.
+#
+# Poll-only. GitHub does emit a `pull_request` webhook with action=opened, but routing a second
+# action off the same webhook is a host-controller concern (see pr_review_request.yml); the poll path
+# is fully self-contained in this YAML and needs no host change. It searches the GitHub API for
+# recently-created PRs and projects each into a DynamicSignal; the dispatcher persists the max
+# created_at across the batch as the next cursor, so each run sees only PRs opened since the last.
+- type: github.pull_request_opened
+
+  poll:
+    every: 5m
+    api: gh
+    method: "search/issues-and-pull-requests"
+    args:
+      # New PRs across the embabel org since the last successful poll. `{{cursor}}` starts at "*",
+      # so the first run picks up the current open set; later runs see only newly-created PRs.
+      q: "is:pr org:embabel created:>={{cursor}}"
+      per_page: "30"
+      sort: "created"
+      order: "asc"
+    cursor:
+      # Max created_at across the batch becomes the next persisted cursor (interpolated into args.q,
+      # so no separate param).
+      from: "$.created_at"
+      # First run has no cursor; GitHub rejects `created:>=*`, so floor at a valid ISO date.
+      initial: "2020-01-01T00:00:00Z"
+    mapping:
+      # Required Signal wire fields
+      id:           "$.id"
+      occurredAt:   "$.created_at"
+      sourceKind:   "github"
+      sourceId:     "$.id"
+      subject:      "$.title"
+      url:          "$.html_url"
+      # Type-specific properties. `$.repository_url` is the API URL ("…/repos/owner/name"); the
+      # dispatcher can't string-manipulate yet, so consumers parse the slug (same as pr_review_request).
+      repo:         "$.repository_url"
+      number:       "$.number"
+      title:        "$.title"
+      author:       "$.user.login"
+      body_excerpt: "$.body"

@@ -48,6 +48,17 @@
     url:          "Web URL of the item"
     body_excerpt: "Body excerpt for LLM context"
 
+- name: github.pull_request_opened
+  parents: [Signal]
+  description: "A NEW pull request was opened in a watched org (poll: org:embabel). Fires via search-poll on newly-created PRs (no dedicated webhook action wired)."
+  properties:
+    repo:         "owner/repo identifier (or repository API URL until parsed)"
+    number:       "Pull request number within the repo"
+    title:        "Pull request title"
+    author:       "Pull request author's GitHub login"
+    url:          "Web URL of the pull request"
+    body_excerpt: "Body excerpt for LLM context"
+
 # GitHubCommitAuthor (eager commit-author mirror) REMOVED in the move to
 # on-demand integration (specs/VIRTUAL_CYPHER.md). It previously polled
 # repos/list-commits and merged authors onto :Person by email.
@@ -73,10 +84,10 @@
     linkFrom: Person
   # Persisted enrichment (committed, not transient): for every Person with an
   # email, fetch their GitHub login and persist (Person)-[:HAS_GITHUB]->(GitHubIdentity).
-  # Run by EnrichmentService. NOTE: the learned /search/users omits the email from
-  # results, so `githubUsersByEmail` must be a purpose-shaped handler that echoes
-  # the queried email in each record (recordKeyField=email) — otherwise results
-  # can't map back to the Person. No such handler yet ⇒ no logins populated.
+  # Run by EnrichmentService. `githubUsersByEmail` (producers/github.yml) uses the learned
+  # /search/users op with `echoKeyAs: email` — the engine stamps the queried email back onto each
+  # result (search/users omits it), so records map to the Person by recordKeyField=email. Only
+  # PUBLIC-email GitHub users resolve (a GitHub search limitation, not a bug).
   virtualJoins:
     - anchorLabel: Person
       relationship: HAS_GITHUB

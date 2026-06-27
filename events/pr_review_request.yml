@@ -66,6 +66,8 @@
       # left null because the cursor is interpolated into `args.q`, not
       # passed as a separate query parameter.
       from: "$.updated_at"
+      # First run has no cursor; GitHub rejects `updated:>=*`, so floor at a valid ISO date.
+      initial: "2020-01-01T00:00:00Z"
     mapping:
       id:           "$.id"
       occurredAt:   "$.updated_at"
