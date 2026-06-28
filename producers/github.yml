@@ -63,6 +63,29 @@
     kind: ttl
     seconds: 300
 
+# All issues in a REPO, regardless of author — the repo-anchored counterpart to the
+# author/assignee searches above. `issues/list-for-repo` is GET /repos/{owner}/{repo}/issues
+# (a plain array, not a search): the `full_name` key ("embabel/me") is split by `keyArgs` into
+# the op's `owner`/`repo` PATH params, and `echoKeyAs: full_name` stamps the queried repo back
+# onto each record (list-for-repo records don't carry the repo) so the join's
+# recordKeyField=full_name maps them to the GitHubRepository anchor. ONE call per repo (keyArgs
+# forces per-key fetch), paged. NOTE: GitHub's REST list-for-repo INCLUDES pull requests (a PR
+# is an issue server-side) — filter graph-side or by state if you want issues only.
+- name: issuesByRepo
+  kind: remote
+  operation: issues/list-for-repo    # GET /repos/{owner}/{repo}/issues (top-level array)
+  records: "$[*]"
+  keyArgs: [owner, repo]             # full_name "embabel/me" → owner=embabel, repo=me (path params)
+  keySplit: "/"
+  echoKeyAs: full_name               # list-for-repo omits the repo → stamp it so records id-match the anchor
+  maxKeysPerCall: 1                  # one repo per call (path params); keyArgs already forces per-key fetch
+  args:
+    state: all                       # default is open-only — include closed too
+  paging: { style: page, size: 100, maxPages: 10 }
+  cache:
+    kind: ttl
+    seconds: 300
+
 # Pull requests, same batched search but `is:pr`. Mirror of the issue producers
 # so a GitHubPullRequest materializes by author / assignee off a GitHubIdentity.
 - name: pullsByAuthor

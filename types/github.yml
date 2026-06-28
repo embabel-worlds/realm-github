@@ -118,10 +118,24 @@
 #
 #   MATCH (me:AssistantUser)-[:EMAILED]->(p:Person)-[:HAS_GITHUB]->(g:GitHubIdentity)-[:RAISED]->(i:GitHubIssue)
 #   RETURN DISTINCT p.name
+# Repository anchor for repo-scoped fetches. REAL only as a LITERAL-SEEDED anchor: pin it
+# with a full_name and traverse, e.g.
+#   MATCH (:GitHubRepository {full_name:'embabel/me'})-[:HAS_ISSUE]->(i:GitHubIssue)
+#   WHERE toLower(i.title) CONTAINS 'neo' RETURN i.title, i.html_url ORDER BY i.created_at DESC
+- name: GitHubRepository
+  visibility: internal
+  userAnchor: false
+  description: "A GitHub repository, anchored by full_name (owner/repo). Seed it with a literal to fetch the repo's issues on demand."
+  properties:
+    full_name:
+      description: "owner/repo, e.g. 'embabel/me' — identity; split into the owner/repo path params."
+      metadata:
+        identity: "true"
+
 - name: GitHubIssue
   visibility: internal
   userAnchor: false
-  description: "A GitHub issue, fetched on demand by author and linked to a GitHubIdentity."
+  description: "A GitHub issue, fetched on demand by author/assignee (off a GitHubIdentity) or by repo (off a GitHubRepository)."
   virtualJoins:
     - anchorLabel: GitHubIdentity
       relationship: RAISED
@@ -133,6 +147,11 @@
       keyField: login
       recordKeyField: assignee.login   # issue's primary assignee login (nested, id-match)
       producer: issuesByAssignee
+    - anchorLabel: GitHubRepository
+      relationship: HAS_ISSUE      # (r:GitHubRepository)-[:HAS_ISSUE]->(i) = ALL issues in the repo (any author)
+      keyField: full_name          # owner/repo, split into the op's owner/repo path params
+      recordKeyField: full_name    # echoed by issuesByRepo (list-for-repo records omit the repo)
+      producer: issuesByRepo
   properties:
     id:
       description: "GitHub issue id — identity of the issue."
