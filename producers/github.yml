@@ -86,6 +86,23 @@
     kind: ttl
     seconds: 300
 
+# All pull requests in a REPO — the PR-shaped sibling of issuesByRepo, so "PRs in embabel/me"
+# is answerable without a bound author. `pulls/list` is GET /repos/{owner}/{repo}/pulls (array).
+- name: pullsByRepo
+  kind: remote
+  operation: pulls/list              # GET /repos/{owner}/{repo}/pulls (top-level array)
+  records: "$[*]"
+  keyArgs: [owner, repo]
+  keySplit: "/"
+  echoKeyAs: full_name
+  maxKeysPerCall: 1
+  args:
+    state: all
+  paging: { style: page, size: 100, maxPages: 10 }
+  cache:
+    kind: ttl
+    seconds: 300
+
 # Pull requests, same batched search but `is:pr`. Mirror of the issue producers
 # so a GitHubPullRequest materializes by author / assignee off a GitHubIdentity.
 - name: pullsByAuthor

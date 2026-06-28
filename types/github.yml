@@ -194,6 +194,11 @@
       keyField: login
       recordKeyField: assignee.login
       producer: pullsByAssignee
+    - anchorLabel: GitHubRepository
+      relationship: HAS_PULL_REQUEST   # (r:GitHubRepository)-[:HAS_PULL_REQUEST]->(pr) = ALL PRs in the repo
+      keyField: full_name
+      recordKeyField: full_name        # echoed by pullsByRepo (pulls/list records omit the repo)
+      producer: pullsByRepo
   properties:
     id:
       description: "GitHub pull-request id — identity of the PR."
