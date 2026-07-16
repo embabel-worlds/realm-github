@@ -1,6 +1,6 @@
 ---
 name: github-workflows
-description: GitHub workflows — listing/searching/creating issues and PRs, looking up users and repos, paginating large result sets, handling rate limits, and the search-then-get pattern. Activate this skill BEFORE making any GitHub call when the user asks anything involving issues, pull requests, repositories, commits, releases, GitHub users, organisations, or anything on github.com.
+description: GitHub — issues, pull requests, repos, commits, releases, users, orgs. Activate BEFORE any GitHub call; it returns the namespaces and rules to follow.
 ---
 
 # GitHub Workflows
