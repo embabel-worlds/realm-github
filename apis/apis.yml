@@ -11,7 +11,11 @@
 # assistant's Wallet under provider name `gh`. Access tokens are
 # persisted under `gh_OAUTH2#${login}` after the user authorizes.
 # See README.md for setup.
-- url: "https://raw.githubusercontent.com/github/rest-api-description/main/descriptions/api.github.com/api.github.com.json"
+# VENDORED spec (sibling file) — never the remote URL: a remote spec is re-downloaded
+# (12.8MB) per workspace build, per user, serially at boot; the local file parses once
+# per process (mtime-keyed, shared across users). Refresh by re-downloading from
+# github/rest-api-description when new operations are needed.
+- url: "api.github.com.json"
   name: gh
   type: openapi
   auth: oauth2
