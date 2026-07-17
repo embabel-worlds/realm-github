@@ -11,10 +11,12 @@
 # assistant's Wallet under provider name `gh`. Access tokens are
 # persisted under `gh_OAUTH2#${login}` after the user authorizes.
 # See README.md for setup.
-# VENDORED spec (sibling file) — never the remote URL: a remote spec is re-downloaded
-# (12.8MB) per workspace build, per user, serially at boot; the local file parses once
-# per process (mtime-keyed, shared across users). Refresh by re-downloading from
-# github/rest-api-description when new operations are needed.
+# VENDORED, TRIMMED spec (sibling file) — never the remote URL: a remote spec is
+# re-downloaded (12.8MB) per workspace build, per user, serially at boot; the local
+# file parses once per process (mtime-keyed, shared across users). The file holds the
+# operation-ids pinned below plus their $ref closure (435KB). When ADDING an operation
+# id, regenerate it from the official github/rest-api-description spec with
+# embabel.com/assistant scripts/test/trim-openapi.py.
 - url: "api.github.com.json"
   name: gh
   type: openapi
