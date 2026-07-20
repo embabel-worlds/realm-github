@@ -59,7 +59,7 @@
       q: "is:open type:pr review-requested:@me updated:>={{cursor}}"
       per_page: "30"
       sort: "updated"
-      order: "asc"
+      order: "desc"
     cursor:
       # `from:` is the JSONPath into each result item whose maximum
       # across the batch becomes the next persisted cursor. `param:` is

@@ -31,10 +31,13 @@
     api: gh
     method: "search/issues-and-pull-requests"
     args:
+      # NEWEST-first: with `asc` a cold cursor crawled the backlog 30 items per fire, flooding
+      # the SignalBus with old items; with `desc` the cursor jumps to the latest update on the
+      # first fire and later runs see only fresh updates (see pr_opened.yml).
       q: "is:open assignee:@me updated:>={{cursor}}"
       per_page: "30"
       sort: "updated"
-      order: "asc"
+      order: "desc"
     cursor:
       from: "$.updated_at"
       # First run has no cursor; GitHub rejects `updated:>=*`, so floor at a valid ISO date.

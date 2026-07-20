@@ -59,6 +59,17 @@
     url:          "Web URL of the pull request"
     body_excerpt: "Body excerpt for LLM context"
 
+- name: github.issue_opened
+  parents: [Signal]
+  description: "A NEW issue was opened in a watched scope (search-poll on newly-created issues, or the github `issues` webhook with action=opened)."
+  properties:
+    repo:         "owner/repo identifier (or repository API URL until parsed)"
+    number:       "Issue number within the repo"
+    title:        "Issue title"
+    author:       "Issue author's GitHub login"
+    url:          "Web URL of the issue"
+    body_excerpt: "Body excerpt for LLM context"
+
 # GitHubCommitAuthor (eager commit-author mirror) REMOVED in the move to
 # on-demand integration (specs/VIRTUAL_CYPHER.md). It previously polled
 # repos/list-commits and merged authors onto :Person by email.
@@ -125,10 +136,10 @@
 - name: GitHubRepository
   visibility: internal
   userAnchor: false
-  description: "A GitHub repository, anchored by full_name (owner/repo). Seed it with a literal to fetch the repo's issues on demand."
+  description: "A GitHub repository. Pin it ONLY as a single literal {full_name:'owner/repo'} (e.g. {full_name:'embabel/me'}) and traverse HAS_ISSUE to fetch its issues on demand."
   properties:
     full_name:
-      description: "owner/repo, e.g. 'embabel/me' — identity; split into the owner/repo path params."
+      description: "The repository's ONLY identity, e.g. 'embabel/me'. Pin a repo as a SINGLE literal {full_name:'owner/repo'} — there are NO separate name/owner properties to filter on, and a repo is NOT matched via html_url. (The producer splits full_name into owner/repo path params internally.)"
       metadata:
         identity: "true"
 
@@ -141,17 +152,30 @@
       relationship: RAISED
       keyField: login              # GitHubIdentity.login
       recordKeyField: user.login   # issue record's author login (nested, id-match)
+      materializedKeyField: authorLogin  # flat scalar issuesByRepo projects; lets a back-hop onto issues
+                                         # ALREADY materialized by the repo link via semijoin (no
+                                         # issuesByAuthor fan-out across every GitHubIdentity)
+      persistMinted: true                # an UNBOUND back-hop (top raisers / who raised most in a repo, no
+                                         # person anchoring the identity) MINTS a GitHubIdentity per distinct
+                                         # authorLogin so the result is ANYBODY who raised issues, not just
+                                         # known contacts. A repo contributor is a real entity worth keeping,
+                                         # so it's eligible for persistence (currently transient; see spec).
       producer: issuesByAuthor
+      description: "issues raised by a BOUND author (a pinned GitHubIdentity login, or a Person via HAS_GITHUB). Use for a SPECIFIC author's issues. For repo-wide 'top/most-frequent raisers' do NOT use this — use the repo's HAS_ISSUE join + i.authorLogin (converging this RAISED join with HAS_ISSUE on one issue returns 0 and fans a search per author)."
     - anchorLabel: GitHubIdentity
       relationship: ASSIGNED       # (g:GitHubIdentity)-[:ASSIGNED]->(i:GitHubIssue) = issues assigned to me
       keyField: login
       recordKeyField: assignee.login   # issue's primary assignee login (nested, id-match)
+      materializedKeyField: assigneeLogin  # flat scalar issuesByRepo projects; lets "issues assigned to me
+                                           # IN a repo" semijoin onto the repo-materialized issues instead of
+                                           # a per-login issuesByAssignee fan-out (mirror of RAISED/authorLogin)
       producer: issuesByAssignee
     - anchorLabel: GitHubRepository
       relationship: HAS_ISSUE      # (r:GitHubRepository)-[:HAS_ISSUE]->(i) = ALL issues in the repo (any author)
       keyField: full_name          # owner/repo, split into the op's owner/repo path params
       recordKeyField: full_name    # echoed by issuesByRepo (list-for-repo records omit the repo)
       producer: issuesByRepo
+      description: "ALL issues in the pinned repo (any author). Each issue carries the scalar i.authorLogin — for 'most-frequent / top RAISERS in this repo' GROUP BY i.authorLogin from THIS join; do NOT also join via the RAISED/author path (converging two fetchers on one issue returns 0). Note: these authors are external logins, not your contacts — do NOT map them to Person/Organization."
   properties:
     id:
       description: "GitHub issue id — identity of the issue."
@@ -169,6 +193,46 @@
     created_at: "ISO-8601 creation timestamp."
     updated_at: "ISO-8601 last-update timestamp."
     comments: "Number of comments on the issue."
+    authorLogin: "GitHub login of the issue's author, on issues fetched BY REPO (projected from the nested user.login). Group/return this for 'most frequent raisers in a repo' — no per-author search, no RAISED convergence needed."
+  # FEW-SHOT for the text-to-cypher generator (lens path). Phrased to teach the PATTERN/CLASS, NOT to
+  # mirror any specific question — synthetic 'owner/repo' placeholders, no real names.
+  examples:
+    # POSITIVE — correct construction the generator otherwise gets wrong:
+    - q: "issue counts per author login in owner/repo"
+      cypher: |
+        MATCH (:GitHubRepository {full_name:'owner/repo'})-[:HAS_ISSUE]->(i:GitHubIssue)
+        WITH i.authorLogin AS login, count(*) AS c WHERE login IS NOT NULL
+        RETURN login, c ORDER BY c DESC LIMIT 200
+    - q: "people I correspond with who filed issues in owner/repo"
+      cypher: |
+        MATCH (me:AssistantUser)-[:EMAILED]->(p:Person)-[:HAS_GITHUB]->(g:GitHubIdentity)-[:RAISED]->(i:GitHubIssue)
+        WHERE toLower(i.html_url) CONTAINS 'owner/repo'
+        RETURN DISTINCT p.name AS name LIMIT 200
+    # POSITIVE — ai.relevant(i, '<criterion>') is a per-row LLM FILTER over the FETCHED issues: keep only the ones the
+    # discriminator judges on target (a subjective test no property or keyword captures). Composes with
+    # real predicates via AND. `ai` is a reserved query namespace, never a stored issue property.
+    - q: "open issues in owner/repo that are really about the login outage, not just anything mentioning auth"
+      cypher: |
+        MATCH (:GitHubRepository {full_name:'owner/repo'})-[:HAS_ISSUE]->(i:GitHubIssue)
+        WHERE i.state = 'open'
+          AND ai.relevant(i, 'about the login outage itself, not merely mentioning auth in passing')
+        RETURN i.title, i.html_url ORDER BY i.created_at DESC LIMIT 50
+    # POSITIVE — ai.score(i, '<criterion>') is a per-row LLM RERANK over the fetched issues; pair it with
+    # LIMIT k for top-k by fit when no scalar (comments, recency) captures "how relevant".
+    - q: "the handful of open issues in owner/repo most relevant to this incident"
+      cypher: |
+        MATCH (:GitHubRepository {full_name:'owner/repo'})-[:HAS_ISSUE]->(i:GitHubIssue)
+        WHERE i.state = 'open'
+        RETURN i.title, i.html_url
+        ORDER BY ai.score(i, 'relevance to the ongoing auth outage incident') DESC LIMIT 5
+    # DECLINE — a whole-integration population, or mapping an external repo's members onto your own
+    # contacts/their employers, is not answerable from your data → deliberate empty:
+    - q: "list every github user there is"
+      cypher: |
+        MATCH (p:Person) WHERE false RETURN p LIMIT 1
+    - q: "what employers do the people who commit to owner/repo have"
+      cypher: |
+        MATCH (p:Person) WHERE false RETURN p LIMIT 1
 
 # On-demand virtual node: a GitHub pull request, the PR-shaped sibling of
 # GitHubIssue. Batched by the `pullsByAuthor` / `pullsByAssignee` producers
@@ -188,17 +252,21 @@
       relationship: OPENED         # (g:GitHubIdentity)-[:OPENED]->(pr) = PRs this login authored
       keyField: login
       recordKeyField: user.login   # PR record's author login (nested, id-match)
+      materializedKeyField: authorLogin  # flat scalar pullsByRepo projects; back-hop onto PRs already
+                                         # materialized by the repo links via semijoin (no pullsByAuthor fan-out)
       producer: pullsByAuthor
     - anchorLabel: GitHubIdentity
       relationship: ASSIGNED       # PRs assigned to this login
       keyField: login
       recordKeyField: assignee.login
+      materializedKeyField: assigneeLogin  # semijoin onto repo-materialized PRs (mirror of issue ASSIGNED)
       producer: pullsByAssignee
     - anchorLabel: GitHubRepository
       relationship: HAS_PULL_REQUEST   # (r:GitHubRepository)-[:HAS_PULL_REQUEST]->(pr) = ALL PRs in the repo
       keyField: full_name
       recordKeyField: full_name        # echoed by pullsByRepo (pulls/list records omit the repo)
       producer: pullsByRepo
+      description: "ALL PRs in the pinned repo (any author). Each PR carries the scalar pr.authorLogin (an external GitHub login, NOT necessarily one of your contacts). For 'most PRs opened / top openers' GROUP BY pr.authorLogin. For the authors' real NAMES and EMAILS, OPTIONAL-bridge that login back to a Person: OPTIONAL MATCH (p:Person)-[:HAS_GITHUB]->(g:GitHubIdentity {login: pr.authorLogin}), then OPTIONAL MATCH (p)-[:HAS_EMAIL]->(e:EmailAddress) — OPTIONAL so external authors with no matching contact still surface by login (name/email null). There is NO pr.authorEmail — never read one. Do NOT also join the OPENED/author fetch path (converging two fetchers on one PR returns 0)."
   properties:
     id:
       description: "GitHub pull-request id — identity of the PR."
@@ -214,3 +282,26 @@
     created_at: "ISO-8601 creation timestamp."
     updated_at: "ISO-8601 last-update timestamp."
     comments: "Number of comments on the PR."
+    authorLogin: "GitHub login of the PR's author, on PRs fetched BY REPO (projected from the nested user.login). Group/return this for 'most frequent PR openers in a repo' — no per-author search, no OPENED convergence needed. For the author's real name/email, OPTIONAL-bridge this login to a Person via (p:Person)-[:HAS_GITHUB]->(g:GitHubIdentity {login: pr.authorLogin}) — external authors have no Person, so name/email come back null."
+  # FEW-SHOT for the text-to-cypher generator (lens path). Teaches the CLASS, not any specific question —
+  # synthetic 'owner/repo' placeholders, no real names.
+  examples:
+    # POSITIVE — the construction the generator otherwise misses: "authors of a repo's PRs, with their
+    # NAMES and EMAILS". The repo path yields pr.authorLogin (an external login, not a Person). To surface a
+    # CONTACT's real name + email, OPTIONAL-bridge that login back to a Person via their persisted
+    # GitHubIdentity, then to their email. OPTIONAL both hops so external authors with no matching contact
+    # still surface by login (name/email null) rather than being dropped. There is NO pr.authorEmail.
+    - q: "authors of the pull requests in owner/repo, with their names and emails"
+      cypher: |
+        MATCH (:GitHubRepository {full_name:'owner/repo'})-[:HAS_PULL_REQUEST]->(pr:GitHubPullRequest)
+        OPTIONAL MATCH (p:Person)-[:HAS_GITHUB]->(g:GitHubIdentity {login: pr.authorLogin})
+        OPTIONAL MATCH (p)-[:HAS_EMAIL]->(e:EmailAddress)
+        RETURN DISTINCT pr.authorLogin AS login, p.name AS name,
+               coalesce(e.address, p.primaryEmail) AS email
+        ORDER BY login LIMIT 200
+    # POSITIVE — PR opener counts per login in a repo (the login IS the answer; no bridge needed):
+    - q: "who opened the most pull requests in owner/repo"
+      cypher: |
+        MATCH (:GitHubRepository {full_name:'owner/repo'})-[:HAS_PULL_REQUEST]->(pr:GitHubPullRequest)
+        WITH pr.authorLogin AS login, count(*) AS c WHERE login IS NOT NULL
+        RETURN login, c ORDER BY c DESC LIMIT 200

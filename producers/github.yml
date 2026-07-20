@@ -32,6 +32,7 @@
     order: desc
   keyTemplate: "author:{key}"
   keyJoin: " "
+  cost: { bucket: github-search, rate: 30/min }   # shares GitHub's one Search API budget with all search ops
   batchSafe: false             # globally-ranked, capped search → engine fetches one author per call
   pushdown:
     - property: html_url
@@ -53,6 +54,7 @@
     order: desc
   keyTemplate: "assignee:{key}"
   keyJoin: " "
+  cost: { bucket: github-search, rate: 30/min }   # shares GitHub's one Search API budget with all search ops
   batchSafe: false             # globally-ranked, capped search → engine fetches one author per call
   pushdown:
     - property: html_url
@@ -79,6 +81,13 @@
   keySplit: "/"
   echoKeyAs: full_name               # list-for-repo omits the repo → stamp it so records id-match the anchor
   maxKeysPerCall: 1                  # one repo per call (path params); keyArgs already forces per-key fetch
+  project:
+    authorLogin: user.login          # lift the nested author login to a top-level scalar so "most frequent
+                                     # raisers in this repo" GROUPS by it from this ONE fetch — no per-author
+                                     # search, no RAISED+HAS_ISSUE convergence (which fans out + returns 0).
+    assigneeLogin: assignee.login    # same for the primary assignee, so "issues assigned to me IN this repo"
+                                     # ((g)-[:ASSIGNED]->(i)<-[:HAS_ISSUE]-(repo)) is a SEMIJOIN off the one repo
+                                     # fetch — not a per-login issuesByAssignee fan-out (was 27 calls / 45s).
   args:
     state: all                       # default is open-only — include closed too
   paging: { style: page, size: 100, maxPages: 10 }
@@ -96,6 +105,11 @@
   keySplit: "/"
   echoKeyAs: full_name
   maxKeysPerCall: 1
+  project:
+    authorLogin: user.login          # mirror of issuesByRepo: lift the nested author login to a top-level
+                                     # scalar so "top PR openers in this repo" GROUPS by it and an OPENED
+                                     # back-hop onto repo-materialized PRs links via semijoin (no fan-out)
+    assigneeLogin: assignee.login    # same for "PRs assigned to me in this repo" (PR ASSIGNED semijoin)
   args:
     state: all
   paging: { style: page, size: 100, maxPages: 10 }
@@ -115,6 +129,7 @@
     order: desc
   keyTemplate: "author:{key}"
   keyJoin: " "
+  cost: { bucket: github-search, rate: 30/min }   # shares GitHub's one Search API budget with all search ops
   batchSafe: false             # globally-ranked, capped search → engine fetches one author per call
   pushdown:
     - property: html_url
@@ -135,6 +150,7 @@
     order: desc
   keyTemplate: "assignee:{key}"
   keyJoin: " "
+  cost: { bucket: github-search, rate: 30/min }   # shares GitHub's one Search API budget with all search ops
   batchSafe: false             # globally-ranked, capped search → engine fetches one author per call
   pushdown:
     - property: html_url
@@ -161,6 +177,14 @@
     q: "{keys}"
   keyTemplate: "{key} in:email"
   echoKeyAs: email               # /search/users omits the queried email — stamp it back per call
+  cost:
+    bucket: github-search        # GitHub Search API: ONE ~30 req/min pool shared across ALL search ops
+    rate: 30/min                 # was undeclared → the planner treated it as unlimited and fired one
+                                 # lookup PER emailed person (120+), of which GitHub 403'd the majority.
+                                 # Declaring the real limit bounds a single query to its budgeted share.
+    batch: false                 # /search/users is one email per call (no bulk email query)
+    yield: low                   # most contacts have NO public GitHub — a broad scan resolves few keys,
+                                 # so deferring the rest (warm cache / enrichment tick) is the right call.
   cache:
     kind: ttl
     seconds: 86400

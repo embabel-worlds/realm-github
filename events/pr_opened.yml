@@ -12,12 +12,16 @@
     api: gh
     method: "search/issues-and-pull-requests"
     args:
-      # New PRs across the embabel org since the last successful poll. `{{cursor}}` starts at "*",
-      # so the first run picks up the current open set; later runs see only newly-created PRs.
+      # New PRs across the embabel org since the last successful poll. NEWEST-first is essential:
+      # with `asc` the page returns the 30 OLDEST matches, the cursor only advances to that page's
+      # max created_at, and a large backlog is crawled 30 PRs per fire — flooding the SignalBus
+      # with years-old PRs for days. With `desc` the newest PR is in the first page, the cursor
+      # jumps straight to "now" on the first fire, and later runs see only newly-created PRs
+      # (the SignalBus dedups the one-item `>=` overlap).
       q: "is:pr org:embabel created:>={{cursor}}"
       per_page: "30"
       sort: "created"
-      order: "asc"
+      order: "desc"
     cursor:
       # Max created_at across the batch becomes the next persisted cursor (interpolated into args.q,
       # so no separate param).
