@@ -1,7 +1,7 @@
 # Deterministic fast-path for direct @mentions in github PRs/issues.
 # Fires when the user is mentioned and the mention is unacknowledged.
 
-stepType: com.embabel.assistant.policy.spec.PolicyActionSpec
+stepType: com.embabel.world.policy.spec.PolicyActionSpec
 name: mention_unread
 description: Direct @mention in a github PR or issue, unacknowledged
 

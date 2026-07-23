@@ -9,7 +9,7 @@
 # that person's commit activity; the host's CardinalityInserter fans it out when the
 # upstream is a collection of people.
 
-stepType: com.embabel.assistant.plan.code.GatewayActionSpec
+stepType: com.embabel.world.plan.code.GatewayActionSpec
 name: listCommitsForPerson
 description: A person's recent GitHub commit activity — answers who is active or contributing on GitHub
 

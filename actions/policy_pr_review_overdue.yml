@@ -8,7 +8,7 @@
 # name is reserved upstream while the predicate DSL iterates. Lives
 # in `actions/` alongside LLM-driven specs.
 
-stepType: com.embabel.assistant.policy.spec.PolicyActionSpec
+stepType: com.embabel.world.policy.spec.PolicyActionSpec
 name: pr_review_overdue
 description: A review was requested from you and it's been over 48h
 

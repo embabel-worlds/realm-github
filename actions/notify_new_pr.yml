@@ -1,4 +1,4 @@
-stepType: com.embabel.assistant.plan.spec.TypeScriptActionSpec
+stepType: com.embabel.world.plan.spec.TypeScriptActionSpec
 name: notify-new-pr
 description: React to a newly-opened pull request in the embabel org
 module: notify_new_pr.ts
