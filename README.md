@@ -1,4 +1,4 @@
-# pack-github
+# realm-github
 
 GitHub via the official OpenAPI 3 spec — gives the LLM full request **and**
 response types so it doesn't have to guess pagination shape, field names,
@@ -14,7 +14,7 @@ Common failures observed in production traces:
 - `i.user.login` vs `i.author.login` field-name guessing
 - `q` vs `query` argument-name confusion
 
-This pack reads the canonical GitHub OpenAPI 3 spec from
+This realm reads the canonical GitHub OpenAPI 3 spec from
 `github/rest-api-description` and surfaces it via the assistant's
 existing OpenAPI learner. The LLM gets full typed `interfaces.ts`
 including pagination wrappers and response field names.
@@ -49,6 +49,6 @@ from the assistant's perspective.
 
 ## Tag filter
 
-The full spec is 600+ operations. This pack filters to five high-value
+The full spec is 600+ operations. This realm filters to five high-value
 tags: `issues`, `pulls`, `repos`, `users`, `search`. Edit `apis/apis.yml`
 to add more (e.g. `actions`, `git`, `code-scanning`).

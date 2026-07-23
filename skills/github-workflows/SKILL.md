@@ -12,10 +12,10 @@ or `execute_python`. Never call them as top-level tools.
 
 | Namespace | Notes |
 |---|---|
-| `gateway.gh.*` | OpenAPI-typed. Methods are **camelCase** (`issuesListForRepo`, `usersGetByUsername`). TYPED API SURFACE has the exact shapes; full file at `/workspace/interfaces.ts`. |
+| `gateway.gh.*` | OpenAPI-typed. Methods are **camelCase** (`issuesListForRepo`, `usersGetByUsername`). TYPED API SURFACE has the exact shapes; full file at `/world/interfaces.ts`. |
 
 **Naming**: method is camelCase, args are snake_case (`per_page`, `issue_number`, `pull_number`, `q`).
-If a call returns `gateway.gh.foo is not a workspace tool`, the error lists every valid method — pick from it. Never re-send the same call.
+If a call returns `gateway.gh.foo is not a world tool`, the error lists every valid method — pick from it. Never re-send the same call.
 
 ## Cardinal rules
 
@@ -148,7 +148,7 @@ problem, not an access problem.
 
 ## Pitfalls
 
-- Method names are **camelCase**; arg names are **snake_case**. Most "not a workspace tool" errors come from snake_case method names.
+- Method names are **camelCase**; arg names are **snake_case**. Most "not a world tool" errors come from snake_case method names.
 - Search uses **`q`**, not `query`.
 - Search returns `{ total_count, items }`; listings return a bare array.
 - Field is **`i.user.login`**, not `i.author.login`.
