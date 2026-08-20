@@ -6,7 +6,7 @@ name: mention_unread
 description: Direct @mention in a github PR or issue, unacknowledged
 
 inputTypeNames:
-  - github.mention
+  - GitHubMentioned
 
 whenExpr: "mentioned == $self and not acknowledged"
 

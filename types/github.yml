@@ -8,7 +8,7 @@
 # subject) are populated by the dispatcher from each event's `mapping:`
 # block — they don't need to appear here.
 
-- name: github.pr_review_request
+- name: GitHubReviewRequested
   parents: [Signal]
   description: "A pull-request review has been requested from the user. Fires on the github `pull_request` webhook with action=review_requested, or via search-poll fallback."
   properties:
@@ -22,7 +22,7 @@
     labels:        "Labels on the pull request (list)"
     comment_count: "Number of comments on the pull request"
 
-- name: github.mention
+- name: GitHubMentioned
   parents: [Signal]
   description: "The user is @-mentioned in a github issue or pull request body or comment."
   properties:
@@ -35,7 +35,7 @@
     url:          "Web URL of the item"
     body_excerpt: "Body excerpt for LLM context"
 
-- name: github.assignment
+- name: GitHubAssigned
   parents: [Signal]
   description: "An issue or pull request has been assigned to the user. Fires on the github `issues` or `pull_request` webhook with action=assigned, or via search-poll fallback."
   properties:
@@ -48,7 +48,7 @@
     url:          "Web URL of the item"
     body_excerpt: "Body excerpt for LLM context"
 
-- name: github.pull_request_opened
+- name: GitHubPullRequestOpened
   parents: [Signal]
   description: "A NEW pull request was opened in a watched org (poll: org:embabel). Fires via search-poll on newly-created PRs (no dedicated webhook action wired)."
   properties:
@@ -59,7 +59,7 @@
     url:          "Web URL of the pull request"
     body_excerpt: "Body excerpt for LLM context"
 
-- name: github.issue_opened
+- name: GitHubIssueOpened
   parents: [Signal]
   description: "A NEW issue was opened in a watched scope (search-poll on newly-created issues, or the github `issues` webhook with action=opened)."
   properties:
@@ -194,6 +194,7 @@
     updated_at: "ISO-8601 last-update timestamp."
     comments: "Number of comments on the issue."
     authorLogin: "GitHub login of the issue's author, on issues fetched BY REPO (projected from the nested user.login). Group/return this for 'most frequent raisers in a repo' — no per-author search, no RAISED convergence needed."
+    assigneeLogin: "GitHub login of the issue's primary assignee, on issues fetched BY REPO (projected from the nested assignee.login). Group/return this for 'who has the most assigned in a repo' — the mirror of authorLogin, and like it, needs no per-assignee search and no ASSIGNED convergence. Null on unassigned issues."
   # FEW-SHOT for the text-to-cypher generator (lens path). Phrased to teach the PATTERN/CLASS, NOT to
   # mirror any specific question — synthetic 'owner/repo' placeholders, no real names.
   examples:
@@ -283,6 +284,7 @@
     updated_at: "ISO-8601 last-update timestamp."
     comments: "Number of comments on the PR."
     authorLogin: "GitHub login of the PR's author, on PRs fetched BY REPO (projected from the nested user.login). Group/return this for 'most frequent PR openers in a repo' — no per-author search, no OPENED convergence needed. For the author's real name/email, OPTIONAL-bridge this login to a Person via (p:Person)-[:HAS_GITHUB]->(g:GitHubIdentity {login: pr.authorLogin}) — external authors have no Person, so name/email come back null."
+    assigneeLogin: "GitHub login of the PR's primary assignee, on PRs fetched BY REPO (projected from the nested assignee.login). Group/return this for 'who has the most PRs assigned in a repo' — the mirror of authorLogin, with the same Person bridge available and the same warning against converging the ASSIGNED fetch path. Null on unassigned PRs."
   # FEW-SHOT for the text-to-cypher generator (lens path). Teaches the CLASS, not any specific question —
   # synthetic 'owner/repo' placeholders, no real names.
   examples:

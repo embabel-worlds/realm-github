@@ -1,7 +1,7 @@
 # Deterministic fast-path for stale review requests. Fires when the user
 # is the requested reviewer and the request has been outstanding ≥ 48h.
 # The host's planner picks this before the (more expensive) LLM judgment
-# on `github.pr_review_request` because of the cheap utility.
+# on `GitHubReviewRequested` because of the cheap utility.
 #
 # Host-extension ActionSpec — the FQN `stepType` resolves via the
 # framework's NameOrClassTypeIdResolver (Class.forName) so no short
@@ -13,7 +13,7 @@ name: pr_review_overdue
 description: A review was requested from you and it's been over 48h
 
 inputTypeNames:
-  - github.pr_review_request
+  - GitHubReviewRequested
 
 whenExpr: "reviewer == $self and age >= 48h"
 

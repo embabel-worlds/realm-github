@@ -1,7 +1,7 @@
 // Reacts to a newly-opened pull request in the embabel org.
 //
 // In scope (see config/actions/.embabel/handler-context.d.ts):
-//   signal  — the github.pull_request_opened envelope (its fields are under signal.properties)
+//   signal  — the GitHubPullRequestOpened envelope (its fields are under signal.properties)
 //   trigger — "signal" here
 //   now     — ISO-8601 timestamp
 //   dryRun  — true = observe-only; guard external/write effects with `if (!dryRun)`

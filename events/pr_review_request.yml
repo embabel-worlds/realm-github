@@ -1,4 +1,4 @@
-# Event source for github.pr_review_request signals.
+# Event source for GitHubReviewRequested signals.
 #
 # Two complementary delivery paths, same output type:
 #
@@ -13,11 +13,11 @@
 #    the next cursor. Same property mapping, same output signal type —
 #    consumers can't tell which path produced the signal.
 #
-# Both reference fields on `github.pr_review_request` declared in
+# Both reference fields on `GitHubReviewRequested` declared in
 # types/github.yml. Tenancy resolution (which AssistantUser the signal
 # belongs to) is the host webhook controller's concern; the mapping
 # below describes only the projection.
-- type: github.pr_review_request
+- type: GitHubReviewRequested
 
   webhook:
     # `pull_request` is the github event name. The host's webhook

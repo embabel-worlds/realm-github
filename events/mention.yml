@@ -1,4 +1,4 @@
-# Event source for github.mention signals.
+# Event source for GitHubMentioned signals.
 #
 # Mentions are a notification-class event, not a single webhook
 # action. Github fires them at the user level (read via the
@@ -15,7 +15,7 @@
 #    Cleaner than scanning, and what github intends. Requires the
 #    `notifications` operationId be added to apis/apis.yml's allowlist
 #    (currently not on it).
-- type: github.mention
+- type: GitHubMentioned
 
   poll:
     every: 5m

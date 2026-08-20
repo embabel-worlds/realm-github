@@ -94,5 +94,5 @@
     - search/code
     # Activity — used by `events/mention.yml`'s poll to read user-scoped
     # notifications with `reason=mention`. The poll executor consumes the
-    # response items and projects each into a `github.mention` DynamicSignal.
+    # response items and projects each into a `GitHubMentioned` DynamicSignal.
     - activity/list-notifications-for-authenticated-user

@@ -1,4 +1,4 @@
-# Event source for github.assignment signals.
+# Event source for GitHubAssigned signals.
 #
 # Webhook: github `issues` and `pull_request` events with
 # action=assigned. The host's webhook controller filters action and
@@ -6,7 +6,7 @@
 # payload shape; PRs have a near-identical `pull_request` envelope and
 # the host controller normalises to a single payload root before
 # dispatch.
-- type: github.assignment
+- type: GitHubAssigned
 
   webhook:
     signature: hmac-sha256
