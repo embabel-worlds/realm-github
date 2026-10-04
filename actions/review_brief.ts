@@ -12,7 +12,7 @@ if (trigger !== 'signal' || !signal) {
   // Has this author's work reached us before? A first-time contributor is the single most useful
   // thing to know at review time, and it is a question about the WORLD, not about this PR.
   const priors = await gateway.kg.query({
-    query: `MATCH (pr:GitHubPullRequest) WHERE pr.author = $author RETURN count(pr) AS n`,
+    cypher: `MATCH (pr:GitHubPullRequest) WHERE pr.author = $author RETURN count(pr) AS n`,
     params: { author: String(author ?? '') },
   })
   const seenBefore = Number(priors?.rows?.[0]?.n ?? 0)

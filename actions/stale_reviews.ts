@@ -7,7 +7,7 @@
 const STALE_DAYS = 2
 
 const waiting = await gateway.kg.query({
-  query: `
+  cypher: `
     MATCH (pr:GitHubPullRequest)
     WHERE pr.state = 'open'
     RETURN pr.full_name AS repo, pr.number AS number, pr.title AS title, pr.updated_at AS updated
