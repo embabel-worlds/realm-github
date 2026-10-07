@@ -3,6 +3,7 @@ description: "GitHub integration — typed via the official OpenAPI 3 spec, so t
 version: 0.5.0
 author: Rod Johnson
 url: https://github.com/embabel-worlds/realm-github
+category: developer
 tags:
   - integrations
   - developer-tools
