@@ -155,11 +155,12 @@
       materializedKeyField: authorLogin  # flat scalar issuesByRepo projects; lets a back-hop onto issues
                                          # ALREADY materialized by the repo link via semijoin (no
                                          # issuesByAuthor fan-out across every GitHubIdentity)
-      persistMinted: true                # an UNBOUND back-hop (top raisers / who raised most in a repo, no
-                                         # person anchoring the identity) MINTS a GitHubIdentity per distinct
-                                         # authorLogin so the result is ANYBODY who raised issues, not just
-                                         # known contacts. A repo contributor is a real entity worth keeping,
-                                         # so it's eligible for persistence (currently transient; see spec).
+                                         # materializedKeyField is also what MINTS: an UNBOUND back-hop (top
+                                         # raisers / who raised most in a repo, with no person anchoring the
+                                         # identity) gets a GitHubIdentity per distinct authorLogin, so the
+                                         # result is ANYBODY who raised issues, not just known contacts. The
+                                         # minted identity lives for the query. Keeping one is a bridge's
+                                         # job — HAS_GITHUB above is that bridge.
       producer: issuesByAuthor
       description: "issues raised by a BOUND author (a pinned GitHubIdentity login, or a Person via HAS_GITHUB). Use for a SPECIFIC author's issues. For repo-wide 'top/most-frequent raisers' do NOT use this — use the repo's HAS_ISSUE join + i.authorLogin (converging this RAISED join with HAS_ISSUE on one issue returns 0 and fans a search per author)."
     - anchorLabel: GitHubIdentity
