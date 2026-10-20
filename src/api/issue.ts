@@ -128,9 +128,12 @@ export class GitHubIssue extends Entity {
     return this.isOpen() && (this.comments ?? 0) === 0 && this.ageDays(now) > days;
   }
 
-  /** `owner`/`repo` parsed from `html_url`. Throws if it can't be located. */
+  /**
+   * `owner`/`repo` parsed from `html_url`. Throws if it can't be located. GitHub lists pull
+   * requests among a repo's issues, so a PR's `/pull/` URL locates its repo too.
+   */
   repoRef(): RepoRef {
-    const m = this.html_url?.match(/github\.com\/([^/]+)\/([^/]+)\/issues\//);
+    const m = this.html_url?.match(/github\.com\/([^/]+)\/([^/]+)\/(?:issues|pull)\//);
     if (!m) throw new Error(`cannot locate owner/repo from html_url: ${this.html_url ?? "(none)"}`);
     return { owner: m[1]!, repo: m[2]! };
   }
