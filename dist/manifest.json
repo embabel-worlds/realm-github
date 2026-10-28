@@ -361,24 +361,10 @@
             "type": "string"
           },
           "draft": {
-            "oneOf": [
-              {
-                "type": "undefined"
-              },
-              {
-                "type": "undefined"
-              }
-            ]
+            "type": "boolean"
           },
           "merged": {
-            "oneOf": [
-              {
-                "type": "undefined"
-              },
-              {
-                "type": "undefined"
-              }
-            ]
+            "type": "boolean"
           },
           "html_url": {
             "type": "string"
@@ -521,14 +507,7 @@
             "type": "string"
           },
           "merged": {
-            "oneOf": [
-              {
-                "type": "undefined"
-              },
-              {
-                "type": "undefined"
-              }
-            ]
+            "type": "boolean"
           },
           "message": {
             "type": "string"
@@ -628,24 +607,10 @@
             "type": "string"
           },
           "draft": {
-            "oneOf": [
-              {
-                "type": "undefined"
-              },
-              {
-                "type": "undefined"
-              }
-            ]
+            "type": "boolean"
           },
           "merged": {
-            "oneOf": [
-              {
-                "type": "undefined"
-              },
-              {
-                "type": "undefined"
-              }
-            ]
+            "type": "boolean"
           },
           "html_url": {
             "type": "string"
@@ -710,24 +675,10 @@
             "type": "string"
           },
           "draft": {
-            "oneOf": [
-              {
-                "type": "undefined"
-              },
-              {
-                "type": "undefined"
-              }
-            ]
+            "type": "boolean"
           },
           "merged": {
-            "oneOf": [
-              {
-                "type": "undefined"
-              },
-              {
-                "type": "undefined"
-              }
-            ]
+            "type": "boolean"
           },
           "html_url": {
             "type": "string"
