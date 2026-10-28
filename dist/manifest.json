@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-06-22T08:38:56.269Z",
+  "generatedAt": "2026-10-20T11:14:47.221Z",
   "entries": [
     {
       "namespace": "issue",
@@ -265,7 +265,7 @@
     {
       "namespace": "issue",
       "name": "repoRef",
-      "description": "`owner`/`repo` parsed from `html_url`. Throws if it can't be located.",
+      "description": "`owner`/`repo` parsed from `html_url`. Throws if it can't be located. GitHub lists pull requests among a repo's issues, so a PR's `/pull/` URL locates its repo too.",
       "inputSchema": {
         "type": "object",
         "properties": {}
@@ -361,24 +361,10 @@
             "type": "string"
           },
           "draft": {
-            "oneOf": [
-              {
-                "type": "undefined"
-              },
-              {
-                "type": "undefined"
-              }
-            ]
+            "type": "boolean"
           },
           "merged": {
-            "oneOf": [
-              {
-                "type": "undefined"
-              },
-              {
-                "type": "undefined"
-              }
-            ]
+            "type": "boolean"
           },
           "html_url": {
             "type": "string"
@@ -521,14 +507,7 @@
             "type": "string"
           },
           "merged": {
-            "oneOf": [
-              {
-                "type": "undefined"
-              },
-              {
-                "type": "undefined"
-              }
-            ]
+            "type": "boolean"
           },
           "message": {
             "type": "string"
@@ -628,24 +607,10 @@
             "type": "string"
           },
           "draft": {
-            "oneOf": [
-              {
-                "type": "undefined"
-              },
-              {
-                "type": "undefined"
-              }
-            ]
+            "type": "boolean"
           },
           "merged": {
-            "oneOf": [
-              {
-                "type": "undefined"
-              },
-              {
-                "type": "undefined"
-              }
-            ]
+            "type": "boolean"
           },
           "html_url": {
             "type": "string"
@@ -710,24 +675,10 @@
             "type": "string"
           },
           "draft": {
-            "oneOf": [
-              {
-                "type": "undefined"
-              },
-              {
-                "type": "undefined"
-              }
-            ]
+            "type": "boolean"
           },
           "merged": {
-            "oneOf": [
-              {
-                "type": "undefined"
-              },
-              {
-                "type": "undefined"
-              }
-            ]
+            "type": "boolean"
           },
           "html_url": {
             "type": "string"
