@@ -21,6 +21,22 @@
 # PAGINATION: `paging:` walks pages (sort=updated, size 100, up to maxPages) so an author whose
 # issues exceed one page (e.g. 249 issues) is fully captured — without it the fetch would
 # floor-cap at the first 100 and a cross-identity intersection could miss matches.
+#
+# THE TODO CONTRACT: GitHubIssue is a child of the shared Todo label (types/github.yml), so each of
+# the three issue producers maps GitHub's record onto Todo's names, the way realm-zep-memory's
+# zep.yml maps a Zep fact onto Memory. `project:` RENAMES a field (`notes` is the issue `body`,
+# lifted before compute runs); `compute:` says what a field MEANS, as one Cypher expression over the
+# record bound as `r` — the record as GitHub hands it over plus whatever `project` lifted (the
+# engine's ProducerSpec.compute). `done` folds GitHub's two states into the one completion flag;
+# `source` names the system; `url`, `created`, `updated` are html_url / created_at / updated_at under
+# the contract's names. Computed keys are stored beside the declared ones, so t.done, t.url,
+# t.source, t.created, t.updated and t.notes read on a :Todo as on a :GitHubIssue. `due`, `priority`
+# and `tags` are not computed: milestone and labels are nested objects, not stored scalars.
+#
+# GitHubPullRequest is a child of Todo too, so the three PR producers carry the SAME block. A PR is a
+# todo through ASSIGNED only (types/github.yml says why); the block is on every PR producer so the
+# contract's names read the same whichever hop fetched the row. `done` folds `state`, and GitHub
+# closes a merged PR, so a merged one is done.
 
 - name: issuesByAuthor
   kind: remote
@@ -39,6 +55,14 @@
       qualifier: "repo:{value}"
       valuePattern: '(?:github\.com/|repos/)?([\w.-]+/[\w.-]+?)(?:/|$)'
   paging: { style: page, size: 100, maxPages: 10 }
+  project:
+    notes: body                      # the Todo contract's notes IS the issue body (a rename, so project:)
+  compute:                           # the Todo contract (see the header); `r` is the record
+    done: "r.state = 'closed'"
+    url: "r.html_url"
+    source: "'github'"
+    created: "r.created_at"
+    updated: "r.updated_at"
   cache:
     kind: ttl
     seconds: 300
@@ -61,6 +85,14 @@
       qualifier: "repo:{value}"
       valuePattern: '(?:github\.com/|repos/)?([\w.-]+/[\w.-]+?)(?:/|$)'
   paging: { style: page, size: 100, maxPages: 10 }
+  project:
+    notes: body                      # the Todo contract's notes IS the issue body (a rename, so project:)
+  compute:                           # the Todo contract (see the header); `r` is the record
+    done: "r.state = 'closed'"
+    url: "r.html_url"
+    source: "'github'"
+    created: "r.created_at"
+    updated: "r.updated_at"
   cache:
     kind: ttl
     seconds: 300
@@ -88,6 +120,13 @@
     assigneeLogin: assignee.login    # same for the primary assignee, so "issues assigned to me IN this repo"
                                      # ((g)-[:ASSIGNED]->(i)<-[:HAS_ISSUE]-(repo)) is a SEMIJOIN off the one repo
                                      # fetch — not a per-login issuesByAssignee fan-out (was 27 calls / 45s).
+    notes: body                      # the Todo contract's notes IS the issue body (a rename, so project:)
+  compute:                           # the Todo contract (see the header); `r` is the record. PRs are in this
+    done: "r.state = 'closed'"       # list too (see above), so they read as Todos off HAS_ISSUE as well.
+    url: "r.html_url"
+    source: "'github'"
+    created: "r.created_at"
+    updated: "r.updated_at"
   args:
     state: all                       # default is open-only — include closed too
   paging: { style: page, size: 100, maxPages: 10 }
@@ -110,6 +149,13 @@
                                      # scalar so "top PR openers in this repo" GROUPS by it and an OPENED
                                      # back-hop onto repo-materialized PRs links via semijoin (no fan-out)
     assigneeLogin: assignee.login    # same for "PRs assigned to me in this repo" (PR ASSIGNED semijoin)
+    notes: body                      # the Todo contract's notes IS the PR body (a rename, so project:)
+  compute:                           # the Todo contract (see the header); `r` is the record
+    done: "r.state = 'closed'"       # a merged PR is closed on GitHub, so merged reads as done
+    url: "r.html_url"
+    source: "'github'"
+    created: "r.created_at"
+    updated: "r.updated_at"
   args:
     state: all
   paging: { style: page, size: 100, maxPages: 10 }
@@ -136,10 +182,19 @@
       qualifier: "repo:{value}"
       valuePattern: '(?:github\.com/|repos/)?([\w.-]+/[\w.-]+?)(?:/|$)'
   paging: { style: page, size: 100, maxPages: 10 }
+  project:
+    notes: body                      # the Todo contract's notes IS the PR body (a rename, so project:)
+  compute:                           # the Todo contract (see the header); `r` is the record
+    done: "r.state = 'closed'"       # a merged PR is closed on GitHub, so merged reads as done
+    url: "r.html_url"
+    source: "'github'"
+    created: "r.created_at"
+    updated: "r.updated_at"
   cache:
     kind: ttl
     seconds: 300
 
+# PRs assigned to a login: the one hop a pull request is a TODO through (types/github.yml).
 - name: pullsByAssignee
   kind: remote
   operation: search/issues-and-pull-requests
@@ -157,6 +212,14 @@
       qualifier: "repo:{value}"
       valuePattern: '(?:github\.com/|repos/)?([\w.-]+/[\w.-]+?)(?:/|$)'
   paging: { style: page, size: 100, maxPages: 10 }
+  project:
+    notes: body                      # the Todo contract's notes IS the PR body (a rename, so project:)
+  compute:                           # the Todo contract (see the header); `r` is the record
+    done: "r.state = 'closed'"       # a merged PR is closed on GitHub, so merged reads as done
+    url: "r.html_url"
+    source: "'github'"
+    created: "r.created_at"
+    updated: "r.updated_at"
   cache:
     kind: ttl
     seconds: 300

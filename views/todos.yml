@@ -1,0 +1,86 @@
+# GITHUB ISSUES AS TODOS — the views beside the world's own `my_todos` (default-world
+# config/views/ladder.yml). A GitHubIssue carries :Todo (types/github.yml, `parents: [Todo]`), but a
+# bare `MATCH (t:Todo)` reads only the STORED list: an issue is virtual and reaches :Todo through its
+# own anchor, the GitHubIdentity it is assigned to. So the GitHub side is read from that anchor, here.
+#
+# These views live here and not in default-world because the world files a WARNING against any view
+# that reads a label no installed realm declares; GitHubIssue and GitHubIdentity are this realm's.
+#
+# `my_github_todos` is a SUBSET view: rows ARE Todo nodes, so `(t:my_github_todos)` composes as a label.
+# `todo_bakeoff` is TABULAR, and the Compare rung for todos: a statement-level UNION of the stored list
+# and the GitHub list. Scoped Cypher scopes a statement-level UNION branch by branch, each as the
+# standalone query it is (CypherDslScopeRewriter / UnionBranches), and Virtual Cypher plans and fetches
+# each branch's joins for that branch — what it refuses is a UNION INSIDE a `CALL {}` whose branches
+# share a name, and `UNION` mixed with `UNION ALL`. Every branch must return the same column names.
+#
+# PULL REQUESTS. GitHubPullRequest is a Todo too (types/github.yml), on a plate through ASSIGNED, so
+# `todo_bakeoff` has a third branch for them. `my_github_todos` stays ISSUES ONLY, and not by choice:
+# a subset view is recognised by its ONE terminal `RETURN <variable>` and inlined by splicing everything
+# before it as a MATCH…WHERE prefix (engine InliningViewExpander.subsetBody / RETURN_TAIL); a UNION
+# body would pass that test on its last RETURN and then be spliced with `RETURN t UNION MATCH …` inside
+# the prefix — broken Cypher, not a subset. There is no UNION handling on that path. Until there is,
+# a PR-and-issue plate as ONE label is written directly: `(g:GitHubIdentity {login})-[:ASSIGNED]->(t:Todo)`,
+# which the planner fans out to both children.
+- name: my_github_todos
+  description: >-
+    The GitHub ISSUES on your plate — assigned to a GitHub login this world knows, open ones by
+    default — as Todos: {id, title, done, url, source:'github', created, updated, notes}. A subset of
+    Todo, so it composes as a label; `due`, `priority` and `tags` are null for an issue. Pass `login`
+    to read one identity's issues; empty reads every GitHub identity this world holds. Pull requests
+    assigned to you are Todos as well but are NOT in this view — a subset view has one MATCH and one
+    RETURN, and a UNION would stop it composing as a label; `todo_bakeoff` has them, and
+    `(g:GitHubIdentity {login: $login})-[:ASSIGNED]->(t:Todo)` reads both kinds as one list.
+  params:
+    login:
+      type: string
+      default: ""
+      description: "A GitHub login, or empty for every identity this world knows."
+    open:
+      type: boolean
+      default: true
+      description: "true = only issues still open; false = every issue, closed too."
+  # `done` is computed as a boolean by the producers (`r.state = 'closed'`), so it is compared as one.
+  cypher: |
+    MATCH (g:GitHubIdentity)-[:ASSIGNED]->(t:GitHubIssue)
+    WHERE ($login = '' OR g.login = $login)
+      AND (NOT $open OR NOT t.done)
+    WITH t ORDER BY t.updated DESC
+    RETURN t
+
+# COMPARE. One row per todo each system holds: the world's own list and GitHub, `system` naming which.
+# The stored branch reads `done` as text on purpose — a stored Todo declares no `type:` for it, so a
+# row may hold boolean true or the text 'true' (default-world config/types/todo.yml says why) — and
+# turns it into the boolean the GitHub branches already have, so the column agrees across the UNION.
+# A stored todo that never set `source` is the world's own: 'me'. GitHub is two branches, issues and
+# pull requests, each through its own ASSIGNED join; `system` says 'github' for both, and `kind` which.
+- name: todo_bakeoff
+  description: >-
+    Compare the systems that hold your todos: one row per task, `system` naming which holds it ('me'
+    for the world's own list, 'github' for an issue or a pull request assigned to you) and `kind`
+    what it is ('todo', 'issue' or 'pull_request'). Open ones by default; a merged PR is closed on
+    GitHub, so it is done. Use it to see what GitHub holds that your list does not, and the reverse.
+    Rows: {system, kind, id, title, done, url, updated}.
+  params:
+    open:
+      type: boolean
+      default: true
+      description: "true = only tasks not yet done; false = every task, done or not."
+    login:
+      type: string
+      default: ""
+      description: "A GitHub login for the GitHub rows, or empty for every identity this world knows."
+  cypher: |
+    MATCH (me:AssistantUser)<-[:OWNED_BY]-(t:Todo)
+    WHERE NOT $open OR coalesce(toString(t.done), 'false') <> 'true'
+    RETURN coalesce(t.source, 'me') AS system, 'todo' AS kind, t.id AS id, t.title AS title,
+           coalesce(toString(t.done), 'false') = 'true' AS done, t.url AS url, t.updated AS updated
+    UNION
+    MATCH (g:GitHubIdentity)-[:ASSIGNED]->(i:GitHubIssue)
+    WHERE ($login = '' OR g.login = $login)
+      AND (NOT $open OR NOT i.done)
+    RETURN 'github' AS system, 'issue' AS kind, i.id AS id, i.title AS title, i.done AS done, i.url AS url, i.updated AS updated
+    UNION
+    MATCH (g:GitHubIdentity)-[:ASSIGNED]->(pr:GitHubPullRequest)
+    WHERE ($login = '' OR g.login = $login)
+      AND (NOT $open OR NOT pr.done)
+    RETURN 'github' AS system, 'pull_request' AS kind, pr.id AS id, pr.title AS title, pr.done AS done, pr.url AS url, pr.updated AS updated

@@ -47,6 +47,47 @@ from the assistant's perspective.
 3. Settings → Connected Services → Authorize for GitHub. The access
    token lands in the wallet under `gh_OAUTH2#${login}`.
 
+## GitHub issues are Todos
+
+`GitHubIssue` is a child of the world's shared `Todo` label (`parents: [Todo]` in
+`types/github.yml`), so every issue this realm fetches carries `:Todo` beside
+`:GitHubIssue`. A query, view or app written against `:Todo` is answered by
+GitHub too without naming it, and `:GitHubIssue` still reads GitHub alone.
+
+An issue is virtual and reaches `:Todo` through its own anchor, the
+`GitHubIdentity` it is assigned to, so a bare `MATCH (t:Todo)` reads only the
+world's stored list. Two views in `views/todos.yml` cover the GitHub side:
+`my_github_todos`, the GitHub list on its own (a subset of Todo, so it composes
+as a label), and `todo_bakeoff`, the comparison — a statement-level `UNION` of
+the world's own list and GitHub's, one row per task with `system` naming which
+holds it. The console's Systems window draws that under Todo.
+
+The three issue producers map GitHub's record onto the contract with a
+`compute:` block: `done` is `state = 'closed'`, `url` is `html_url`, `source`
+is `'github'`, `created` / `updated` are `created_at` / `updated_at`, and
+`notes` is the body.
+
+A pull request is a Todo as well (`GitHubPullRequest`, `parents: [Todo]`),
+with the same block on its three producers, but it is on a plate only through
+`ASSIGNED`: a PR is a change proposal, so the login that `OPENED` it and the
+repo that `HAS_PULL_REQUEST` are not todo readings. A merged PR is closed on
+GitHub, so it is `done`. `todo_bakeoff` has a `pull_request` branch beside
+`issue`; `my_github_todos` stays issues only, because a subset view has one
+`MATCH` and one `RETURN` and a `UNION` would stop it composing as a label —
+`(g:GitHubIdentity {login: $login})-[:ASSIGNED]->(t:Todo)` reads both kinds
+as one list. So "what's on my plate" is:
+
+```cypher
+MATCH (g:GitHubIdentity {login:'my-login'})-[:ASSIGNED]->(t:Todo)
+WHERE NOT t.done
+RETURN t.title, t.url, t.updated ORDER BY t.updated DESC
+```
+
+`due`, `priority` and `tags` are empty for now: GitHub's milestone and labels
+are nested objects, and the materializer stores only scalars. Issues fetched by
+repo include pull requests (a PR is an issue to GitHub's REST list), so a
+`:Todo` read through `HAS_ISSUE` carries PRs too.
+
 ## Tag filter
 
 The full spec is 600+ operations. This realm filters to five high-value
