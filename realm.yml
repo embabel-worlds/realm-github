@@ -8,4 +8,4 @@ tags:
   - developer-tools
   - openapi
   - skills
-  - todo          # brings a child of the shared Todo label (GitHubIssue); how "Add a system" finds it
+  - todo          # brings children of the shared Todo label (GitHubIssue, GitHubPullRequest); how "Add a system" finds it

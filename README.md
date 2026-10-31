@@ -65,7 +65,17 @@ holds it. The console's Systems window draws that under Todo.
 The three issue producers map GitHub's record onto the contract with a
 `compute:` block: `done` is `state = 'closed'`, `url` is `html_url`, `source`
 is `'github'`, `created` / `updated` are `created_at` / `updated_at`, and
-`notes` is the body. So "what's on my plate" is:
+`notes` is the body.
+
+A pull request is a Todo as well (`GitHubPullRequest`, `parents: [Todo]`),
+with the same block on its three producers, but it is on a plate only through
+`ASSIGNED`: a PR is a change proposal, so the login that `OPENED` it and the
+repo that `HAS_PULL_REQUEST` are not todo readings. A merged PR is closed on
+GitHub, so it is `done`. `todo_bakeoff` has a `pull_request` branch beside
+`issue`; `my_github_todos` stays issues only, because a subset view has one
+`MATCH` and one `RETURN` and a `UNION` would stop it composing as a label —
+`(g:GitHubIdentity {login: $login})-[:ASSIGNED]->(t:Todo)` reads both kinds
+as one list. So "what's on my plate" is:
 
 ```cypher
 MATCH (g:GitHubIdentity {login:'my-login'})-[:ASSIGNED]->(t:Todo)
