@@ -143,10 +143,18 @@
       metadata:
         identity: "true"
 
+# A GitHub issue is a Todo: `parents: [Todo]` puts the shared label on every issue this realm
+# materializes, so a query, view or app written against :Todo (the world's own list, `my_todos`,
+# `todo_bakeoff`) is answered by GitHub too without naming it. The Todo contract — id, title, due,
+# priority, done, tags, notes, source, url, created, updated — is projected by a `compute:` block on
+# each issue producer (producers/github.yml), the way realm-zep-memory maps Zep's facts onto Memory.
+# visibility / userAnchor / description / identity are restated because a child inherits
+# properties, labels and lifecycle but not those (realm-spec LABELS_AND_COMPOSITION.md §2).
 - name: GitHubIssue
+  parents: [Todo]
   visibility: internal
   userAnchor: false
-  description: "A GitHub issue, fetched on demand by author/assignee (off a GitHubIdentity) or by repo (off a GitHubRepository)."
+  description: "A GitHub issue, fetched on demand by author/assignee (off a GitHubIdentity) or by repo (off a GitHubRepository). It is a Todo: name :Todo to read every system that holds something to do, :GitHubIssue for GitHub alone. `done` is true when the issue is closed, `source` is 'github', `url` opens it on GitHub; `due`, `priority` and `tags` are null for now — milestone and labels are nested objects the materializer does not store as scalars. Issues fetched BY REPO include pull requests (a PR is an issue to GitHub's REST list), so a :Todo read through HAS_ISSUE carries PRs too."
   virtualJoins:
     - anchorLabel: GitHubIdentity
       relationship: RAISED
@@ -195,9 +203,26 @@
     comments: "Number of comments on the issue."
     authorLogin: "GitHub login of the issue's author, on issues fetched BY REPO (projected from the nested user.login). Group/return this for 'most frequent raisers in a repo' — no per-author search, no RAISED convergence needed."
     assigneeLogin: "GitHub login of the issue's primary assignee, on issues fetched BY REPO (projected from the nested assignee.login). Group/return this for 'who has the most assigned in a repo' — the mirror of authorLogin, and like it, needs no per-assignee search and no ASSIGNED convergence. Null on unassigned issues."
+    # The Todo contract (default-world types/todo.yml), inherited from the parent and computed per
+    # record by the `compute:` block on each issue producer. `title` above is the contract's title.
+    # `due`, `priority` and `tags` are inherited but never set: GitHub's milestone and labels are
+    # nested objects, and the materializer stores only scalars — so they read null on every issue.
+    done: { type: boolean, description: "True when the issue is closed (state = 'closed'). The Todo contract's one completion flag; a closed issue is still a todo you can ask about." }
+    url: "Where to open it: the issue's html_url, under the Todo contract's name."
+    source: "'github' — which system holds this todo. WHERE t.source = 'github' picks GitHub rows out of a :Todo read."
+    created: "When the issue was raised (ISO-8601, = created_at), under the Todo contract's name."
+    updated: "When the issue last changed (ISO-8601, = updated_at), under the Todo contract's name."
+    notes: "The issue body, under the Todo contract's name (lifted from `body` by the producers' project:)."
   # FEW-SHOT for the text-to-cypher generator (lens path). Phrased to teach the PATTERN/CLASS, NOT to
   # mirror any specific question — synthetic 'owner/repo' placeholders, no real names.
   examples:
+    # POSITIVE — the Todo reading: issues assigned to a login are what is on that person's plate, and
+    # naming :Todo (not :GitHubIssue) is what lets the same question later span every system.
+    - q: "what's on my plate on GitHub"
+      cypher: |
+        MATCH (g:GitHubIdentity {login:'my-login'})-[:ASSIGNED]->(t:Todo)
+        WHERE NOT t.done
+        RETURN t.title, t.url, t.updated ORDER BY t.updated DESC LIMIT 50
     # POSITIVE — correct construction the generator otherwise gets wrong:
     - q: "issue counts per author login in owner/repo"
       cypher: |
