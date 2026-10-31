@@ -51,9 +51,16 @@ from the assistant's perspective.
 
 `GitHubIssue` is a child of the world's shared `Todo` label (`parents: [Todo]` in
 `types/github.yml`), so every issue this realm fetches carries `:Todo` beside
-`:GitHubIssue`. A query, view or app written against `:Todo` — the world's own
-list, `my_todos`, `todo_bakeoff` — is answered by GitHub too without naming it,
-and `:GitHubIssue` still reads GitHub alone.
+`:GitHubIssue`. A query, view or app written against `:Todo` is answered by
+GitHub too without naming it, and `:GitHubIssue` still reads GitHub alone.
+
+An issue is virtual and reaches `:Todo` through its own anchor, the
+`GitHubIdentity` it is assigned to, so a bare `MATCH (t:Todo)` reads only the
+world's stored list. Two views in `views/todos.yml` cover the GitHub side:
+`my_github_todos`, the GitHub list on its own (a subset of Todo, so it composes
+as a label), and `todo_bakeoff`, the comparison — a statement-level `UNION` of
+the world's own list and GitHub's, one row per task with `system` naming which
+holds it. The console's Systems window draws that under Todo.
 
 The three issue producers map GitHub's record onto the contract with a
 `compute:` block: `done` is `state = 'closed'`, `url` is `html_url`, `source`

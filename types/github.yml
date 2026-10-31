@@ -144,8 +144,9 @@
         identity: "true"
 
 # A GitHub issue is a Todo: `parents: [Todo]` puts the shared label on every issue this realm
-# materializes, so a query, view or app written against :Todo (the world's own list, `my_todos`,
-# `todo_bakeoff`) is answered by GitHub too without naming it. The Todo contract — id, title, due,
+# materializes, so a query, view or app written against :Todo is answered by GitHub too without naming
+# it; `my_github_todos` (views/todos.yml) is the GitHub side of the world's own `my_todos`, since an
+# issue reaches :Todo through its GitHubIdentity anchor. The Todo contract — id, title, due,
 # priority, done, tags, notes, source, url, created, updated — is projected by a `compute:` block on
 # each issue producer (producers/github.yml), the way realm-zep-memory maps Zep's facts onto Memory.
 # visibility / userAnchor / description / identity are restated because a child inherits
