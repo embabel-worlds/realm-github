@@ -12,6 +12,7 @@ import { describe, it, expect, vi } from "vitest";
 import { entityForTest, mockGateway } from "@embabel/runtime-types";
 import type { GenericGatewayContext } from "@embabel/runtime-types";
 import { GitHubIssue } from "../src/api/issue";
+import { InvalidArgument } from "../src/lib/arguments";
 
 const NOW = Date.parse("2026-06-22T00:00:00Z");
 const daysAgo = (n: number) => new Date(NOW - n * 86_400_000).toISOString();
@@ -91,9 +92,10 @@ describe("GitHubIssue effectful verbs", () => {
     });
   });
 
-  it("addLabels passes the labels array", async () => {
+  // The host calls a verb with one argument, so a list of names arrives as one array.
+  it("addLabels sends the one array it is called with, flat and trimmed", async () => {
     const issues_add_labels = vi.fn().mockResolvedValue([]);
-    await issue({}, { "issues/add-labels": issues_add_labels }).addLabels("stale", "needs-triage");
+    await issue({}, { "issues/add-labels": issues_add_labels }).addLabels(["stale", " needs-triage "]);
     expect(issues_add_labels).toHaveBeenCalledWith({
       owner: "octocat",
       repo: "hello-world",
@@ -104,19 +106,45 @@ describe("GitHubIssue effectful verbs", () => {
 
   it("addLabels refuses an empty list before calling GitHub", async () => {
     const issues_add_labels = vi.fn();
-    await expect(issue({}, { "issues/add-labels": issues_add_labels }).addLabels()).rejects.toThrow(/at least one label/);
+    const call = issue({}, { "issues/add-labels": issues_add_labels }).addLabels([]);
+    await expect(call).rejects.toThrow(InvalidArgument);
+    await expect(call).rejects.toThrow(/at least one label/);
     expect(issues_add_labels).not.toHaveBeenCalled();
   });
 
-  it("assign passes the assignees array", async () => {
+  it("addLabels refuses a blank, whitespace-only or null label", async () => {
+    const issues_add_labels = vi.fn();
+    const i = issue({}, { "issues/add-labels": issues_add_labels });
+    for (const bad of [[""], ["bug", "   "], [null]]) {
+      await expect(i.addLabels(bad as string[])).rejects.toThrow(InvalidArgument);
+    }
+    expect(issues_add_labels).not.toHaveBeenCalled();
+  });
+
+  it("addLabels refuses an argument that isn't an array", async () => {
+    const issues_add_labels = vi.fn();
+    await expect(issue({}, { "issues/add-labels": issues_add_labels }).addLabels("bug" as unknown as string[]))
+      .rejects.toThrow(/takes one array of labels/);
+    expect(issues_add_labels).not.toHaveBeenCalled();
+  });
+
+  it("assign sends the one array it is called with", async () => {
     const issues_add_assignees = vi.fn().mockResolvedValue([]);
-    await issue({}, { "issues/add-assignees": issues_add_assignees }).assign("octocat");
+    await issue({}, { "issues/add-assignees": issues_add_assignees }).assign(["octocat"]);
     expect(issues_add_assignees).toHaveBeenCalledWith({
       owner: "octocat",
       repo: "hello-world",
       issue_number: 42,
       body: { assignees: ["octocat"] },
     });
+  });
+
+  it("assign refuses an empty list or a blank login before calling GitHub", async () => {
+    const issues_add_assignees = vi.fn();
+    const i = issue({}, { "issues/add-assignees": issues_add_assignees });
+    await expect(i.assign([])).rejects.toThrow(/at least one assignee/);
+    await expect(i.assign([" "])).rejects.toThrow(InvalidArgument);
+    expect(issues_add_assignees).not.toHaveBeenCalled();
   });
 
   it("an effectful verb refuses when the repo can't be located", async () => {

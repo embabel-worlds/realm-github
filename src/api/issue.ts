@@ -1,4 +1,5 @@
 import { Entity } from "@embabel/runtime-types";
+import { nameList } from "../lib/arguments";
 
 // ─── Data shapes ────────────────────────────────────────────────────────────
 // Plain records the verbs return. The GitHub write ops echo the updated issue /
@@ -165,16 +166,23 @@ export class GitHubIssue extends Entity {
     return this.api.gh["issues/create-comment"]({ owner, repo, issue_number: this.number, body: { body } });
   }
 
-  /** Add labels (additive; GitHub ignores ones already present). Refuses an empty list. */
-  async addLabels(...labels: string[]): Promise<unknown> {
-    if (labels.length === 0) throw new Error("addLabels needs at least one label");
+  /**
+   * Add labels, passed as one array: `addLabels(["bug", "ui"])` (additive; GitHub ignores ones
+   * already present). Refuses an empty list or a blank label.
+   */
+  async addLabels(labels: string[]): Promise<unknown> {
+    const names = nameList(labels, "addLabels", "label");
     const { owner, repo } = this.repoRef();
-    return this.api.gh["issues/add-labels"]({ owner, repo, issue_number: this.number, body: { labels } });
+    return this.api.gh["issues/add-labels"]({ owner, repo, issue_number: this.number, body: { labels: names } });
   }
 
-  /** Assign GitHub logins (additive; GitHub ignores ones already assigned). */
-  async assign(...assignees: string[]): Promise<unknown> {
+  /**
+   * Assign GitHub logins, passed as one array: `assign(["octocat"])` (additive; GitHub ignores
+   * ones already assigned). Refuses an empty list or a blank login.
+   */
+  async assign(assignees: string[]): Promise<unknown> {
+    const names = nameList(assignees, "assign", "assignee");
     const { owner, repo } = this.repoRef();
-    return this.api.gh["issues/add-assignees"]({ owner, repo, issue_number: this.number, body: { assignees } });
+    return this.api.gh["issues/add-assignees"]({ owner, repo, issue_number: this.number, body: { assignees: names } });
   }
 }

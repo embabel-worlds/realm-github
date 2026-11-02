@@ -9,6 +9,7 @@ import { describe, it, expect, vi } from "vitest";
 import { entityForTest, mockGateway } from "@embabel/runtime-types";
 import type { GenericGatewayContext } from "@embabel/runtime-types";
 import { GitHubPullRequest } from "../src/api/pull-request";
+import { InvalidArgument } from "../src/lib/arguments";
 
 const NOW = Date.parse("2026-06-22T00:00:00Z");
 const daysAgo = (n: number) => new Date(NOW - n * 86_400_000).toISOString();
@@ -78,7 +79,7 @@ describe("GitHubPullRequest effectful verbs", () => {
 
   it("requestReviewers passes the reviewers array", async () => {
     const pulls_request_reviewers = vi.fn().mockResolvedValue({ number: 7 });
-    await pr({}, { "pulls/request-reviewers": pulls_request_reviewers }).requestReviewers("alice", "bob");
+    await pr({}, { "pulls/request-reviewers": pulls_request_reviewers }).requestReviewers(["alice", "bob"]);
     expect(pulls_request_reviewers).toHaveBeenCalledWith({
       owner: "octocat",
       repo: "hello-world",
@@ -87,14 +88,30 @@ describe("GitHubPullRequest effectful verbs", () => {
     });
   });
 
-  it("requestReviewers and addLabels refuse an empty list before calling GitHub", async () => {
+  it("requestReviewers, addLabels and assign refuse an empty list before calling GitHub", async () => {
     const pulls_request_reviewers = vi.fn();
     const issues_add_labels = vi.fn();
-    const p = pr({}, { "pulls/request-reviewers": pulls_request_reviewers, "issues/add-labels": issues_add_labels });
-    await expect(p.requestReviewers()).rejects.toThrow(/at least one reviewer/);
-    await expect(p.addLabels()).rejects.toThrow(/at least one label/);
+    const issues_add_assignees = vi.fn();
+    const p = pr({}, {
+      "pulls/request-reviewers": pulls_request_reviewers,
+      "issues/add-labels": issues_add_labels,
+      "issues/add-assignees": issues_add_assignees,
+    });
+    await expect(p.requestReviewers([])).rejects.toThrow(/at least one reviewer/);
+    await expect(p.addLabels([])).rejects.toThrow(/at least one label/);
+    await expect(p.assign([])).rejects.toThrow(/at least one assignee/);
     expect(pulls_request_reviewers).not.toHaveBeenCalled();
     expect(issues_add_labels).not.toHaveBeenCalled();
+    expect(issues_add_assignees).not.toHaveBeenCalled();
+  });
+
+  it("requestReviewers refuses a blank or null login, and an argument that isn't an array", async () => {
+    const pulls_request_reviewers = vi.fn();
+    const p = pr({}, { "pulls/request-reviewers": pulls_request_reviewers });
+    await expect(p.requestReviewers(["alice", "  "])).rejects.toThrow(InvalidArgument);
+    await expect(p.requestReviewers([null] as unknown as string[])).rejects.toThrow(InvalidArgument);
+    await expect(p.requestReviewers("alice" as unknown as string[])).rejects.toThrow(/takes one array of reviewers/);
+    expect(pulls_request_reviewers).not.toHaveBeenCalled();
   });
 
   it("close uses the issues endpoint with the PR number", async () => {
@@ -115,8 +132,8 @@ describe("GitHubPullRequest effectful verbs", () => {
     const p = pr({}, { "issues/create-comment": issues_create_comment, "issues/add-labels": issues_add_labels, "issues/add-assignees": issues_add_assignees });
 
     await p.comment("LGTM");
-    await p.addLabels("needs-review");
-    await p.assign("octocat");
+    await p.addLabels(["needs-review"]);
+    await p.assign(["octocat"]);
 
     expect(issues_create_comment).toHaveBeenCalledWith({ owner: "octocat", repo: "hello-world", issue_number: 7, body: { body: "LGTM" } });
     expect(issues_add_labels).toHaveBeenCalledWith({ owner: "octocat", repo: "hello-world", issue_number: 7, body: { labels: ["needs-review"] } });

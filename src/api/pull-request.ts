@@ -1,15 +1,20 @@
 import { Entity } from "@embabel/runtime-types";
+import { nameList } from "../lib/arguments";
 
 // ─── Data shapes ────────────────────────────────────────────────────────────
 
-/** The PR representation a write op returns (the slice we read back). */
+/**
+ * The PR representation a write op returns (the slice we read back). Both endpoints that
+ * return it (issues/update and pulls/request-reviewers) send `draft` on a PR, and neither
+ * sends `merged`; `merge()` reports that. `draft` is a plain required boolean because the
+ * manifest builder can't describe an optional one: it writes `{"type":"undefined"}` instead.
+ */
 export interface GitHubPullRequestRecord {
   id?: number;
   number?: number;
   title?: string;
   state?: string;
-  draft?: boolean;
-  merged?: boolean;
+  draft: boolean;
   html_url?: string;
   updated_at?: string;
 }
@@ -21,10 +26,13 @@ export interface GitHubComment {
   body?: string;
 }
 
-/** What `pulls/merge` returns. */
+/**
+ * What `pulls/merge` returns. GitHub always sends `merged`, so it's a plain required boolean,
+ * which is also the only kind of boolean the manifest builder can describe.
+ */
 export interface GitHubMergeResult {
   sha?: string;
-  merged?: boolean;
+  merged: boolean;
   message?: string;
 }
 
@@ -193,11 +201,14 @@ export class GitHubPullRequest extends Entity {
     });
   }
 
-  /** Request reviews from GitHub logins (additive). Refuses an empty list, which GitHub rejects. */
-  async requestReviewers(...reviewers: string[]): Promise<GitHubPullRequestRecord> {
-    if (reviewers.length === 0) throw new Error("requestReviewers needs at least one reviewer");
+  /**
+   * Request reviews from GitHub logins, passed as one array: `requestReviewers(["alice"])`
+   * (additive). Refuses an empty list, which GitHub rejects, or a blank login.
+   */
+  async requestReviewers(reviewers: string[]): Promise<GitHubPullRequestRecord> {
+    const names = nameList(reviewers, "requestReviewers", "reviewer");
     const { owner, repo } = this.repoRef();
-    return this.api.gh["pulls/request-reviewers"]({ owner, repo, pull_number: this.number, body: { reviewers } });
+    return this.api.gh["pulls/request-reviewers"]({ owner, repo, pull_number: this.number, body: { reviewers: names } });
   }
 
   /** Close the PR without merging. `reason` records why. Idempotent. */
@@ -218,16 +229,23 @@ export class GitHubPullRequest extends Entity {
     return this.api.gh["issues/create-comment"]({ owner, repo, issue_number: this.number, body: { body } });
   }
 
-  /** Add labels (additive; GitHub ignores ones already present). Refuses an empty list. */
-  async addLabels(...labels: string[]): Promise<unknown> {
-    if (labels.length === 0) throw new Error("addLabels needs at least one label");
+  /**
+   * Add labels, passed as one array: `addLabels(["needs-review"])` (additive; GitHub ignores
+   * ones already present). Refuses an empty list or a blank label.
+   */
+  async addLabels(labels: string[]): Promise<unknown> {
+    const names = nameList(labels, "addLabels", "label");
     const { owner, repo } = this.repoRef();
-    return this.api.gh["issues/add-labels"]({ owner, repo, issue_number: this.number, body: { labels } });
+    return this.api.gh["issues/add-labels"]({ owner, repo, issue_number: this.number, body: { labels: names } });
   }
 
-  /** Assign GitHub logins (additive; distinct from reviewers). */
-  async assign(...assignees: string[]): Promise<unknown> {
+  /**
+   * Assign GitHub logins, passed as one array: `assign(["octocat"])` (additive; distinct from
+   * reviewers). Refuses an empty list or a blank login.
+   */
+  async assign(assignees: string[]): Promise<unknown> {
+    const names = nameList(assignees, "assign", "assignee");
     const { owner, repo } = this.repoRef();
-    return this.api.gh["issues/add-assignees"]({ owner, repo, issue_number: this.number, body: { assignees } });
+    return this.api.gh["issues/add-assignees"]({ owner, repo, issue_number: this.number, body: { assignees: names } });
   }
 }

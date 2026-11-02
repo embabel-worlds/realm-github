@@ -128,17 +128,17 @@ async function everyVerbCall(): Promise<Call[]> {
   await issue.close();
   await issue.reopen();
   await issue.comment("text");
-  await issue.addLabels("bug");
-  await issue.assign("octocat");
+  await issue.addLabels(["bug"]);
+  await issue.assign(["octocat"]);
   const pr = entityForTest(GitHubPullRequest, { html_url: "https://github.com/octocat/hello-world/pull/7", number: 7 }, gateway);
   await pr.merge();
   await pr.merge({ method: "rebase", title: "t", message: "m" });
-  await pr.requestReviewers("alice");
+  await pr.requestReviewers(["alice"]);
   await pr.close();
   await pr.reopen();
   await pr.comment("text");
-  await pr.addLabels("bug");
-  await pr.assign("octocat");
+  await pr.addLabels(["bug"]);
+  await pr.assign(["octocat"]);
   return calls;
 }
 

@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GitHubPullRequest = void 0;
 const runtime_types_1 = require("@embabel/runtime-types");
+const arguments_1 = require("../lib/arguments");
 const DAY_MS = 86_400_000;
 // ─── The type ───────────────────────────────────────────────────────────────
 /**
@@ -90,12 +91,14 @@ class GitHubPullRequest extends runtime_types_1.Entity {
             },
         });
     }
-    /** Request reviews from GitHub logins (additive). Refuses an empty list, which GitHub rejects. */
-    async requestReviewers(...reviewers) {
-        if (reviewers.length === 0)
-            throw new Error("requestReviewers needs at least one reviewer");
+    /**
+     * Request reviews from GitHub logins, passed as one array: `requestReviewers(["alice"])`
+     * (additive). Refuses an empty list, which GitHub rejects, or a blank login.
+     */
+    async requestReviewers(reviewers) {
+        const names = (0, arguments_1.nameList)(reviewers, "requestReviewers", "reviewer");
         const { owner, repo } = this.repoRef();
-        return this.api.gh["pulls/request-reviewers"]({ owner, repo, pull_number: this.number, body: { reviewers } });
+        return this.api.gh["pulls/request-reviewers"]({ owner, repo, pull_number: this.number, body: { reviewers: names } });
     }
     /** Close the PR without merging. `reason` records why. Idempotent. */
     async close(reason = "not_planned") {
@@ -112,17 +115,23 @@ class GitHubPullRequest extends runtime_types_1.Entity {
         const { owner, repo } = this.repoRef();
         return this.api.gh["issues/create-comment"]({ owner, repo, issue_number: this.number, body: { body } });
     }
-    /** Add labels (additive; GitHub ignores ones already present). Refuses an empty list. */
-    async addLabels(...labels) {
-        if (labels.length === 0)
-            throw new Error("addLabels needs at least one label");
+    /**
+     * Add labels, passed as one array: `addLabels(["needs-review"])` (additive; GitHub ignores
+     * ones already present). Refuses an empty list or a blank label.
+     */
+    async addLabels(labels) {
+        const names = (0, arguments_1.nameList)(labels, "addLabels", "label");
         const { owner, repo } = this.repoRef();
-        return this.api.gh["issues/add-labels"]({ owner, repo, issue_number: this.number, body: { labels } });
+        return this.api.gh["issues/add-labels"]({ owner, repo, issue_number: this.number, body: { labels: names } });
     }
-    /** Assign GitHub logins (additive; distinct from reviewers). */
-    async assign(...assignees) {
+    /**
+     * Assign GitHub logins, passed as one array: `assign(["octocat"])` (additive; distinct from
+     * reviewers). Refuses an empty list or a blank login.
+     */
+    async assign(assignees) {
+        const names = (0, arguments_1.nameList)(assignees, "assign", "assignee");
         const { owner, repo } = this.repoRef();
-        return this.api.gh["issues/add-assignees"]({ owner, repo, issue_number: this.number, body: { assignees } });
+        return this.api.gh["issues/add-assignees"]({ owner, repo, issue_number: this.number, body: { assignees: names } });
     }
 }
 exports.GitHubPullRequest = GitHubPullRequest;
