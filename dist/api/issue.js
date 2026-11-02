@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GitHubIssue = void 0;
 const runtime_types_1 = require("@embabel/runtime-types");
+const arguments_1 = require("../lib/arguments");
 const DAY_MS = 86_400_000;
 // ─── The type ───────────────────────────────────────────────────────────────
 /**
@@ -73,27 +74,35 @@ class GitHubIssue extends runtime_types_1.Entity {
     /** Close the issue. `reason` records why (GitHub `state_reason`). Idempotent. */
     async close(reason = "completed") {
         const { owner, repo } = this.repoRef();
-        return this.api.gh.issues_update({ owner, repo, issue_number: this.number, state: "closed", state_reason: reason });
+        return this.api.gh["issues/update"]({ owner, repo, issue_number: this.number, body: { state: "closed", state_reason: reason } });
     }
     /** Reopen the issue. Idempotent. */
     async reopen() {
         const { owner, repo } = this.repoRef();
-        return this.api.gh.issues_update({ owner, repo, issue_number: this.number, state: "open", state_reason: "reopened" });
+        return this.api.gh["issues/update"]({ owner, repo, issue_number: this.number, body: { state: "open", state_reason: "reopened" } });
     }
     /** Add a comment. */
     async comment(body) {
         const { owner, repo } = this.repoRef();
-        return this.api.gh.issues_create_comment({ owner, repo, issue_number: this.number, body });
+        return this.api.gh["issues/create-comment"]({ owner, repo, issue_number: this.number, body: { body } });
     }
-    /** Add labels (additive; GitHub ignores ones already present). */
-    async addLabels(...labels) {
+    /**
+     * Add labels, passed as one array: `addLabels(["bug", "ui"])` (additive; GitHub ignores ones
+     * already present). Refuses an empty list or a blank label.
+     */
+    async addLabels(labels) {
+        const names = (0, arguments_1.nameList)(labels, "addLabels", "label");
         const { owner, repo } = this.repoRef();
-        return this.api.gh.issues_add_labels({ owner, repo, issue_number: this.number, labels });
+        return this.api.gh["issues/add-labels"]({ owner, repo, issue_number: this.number, body: { labels: names } });
     }
-    /** Assign GitHub logins (additive; GitHub ignores ones already assigned). */
-    async assign(...assignees) {
+    /**
+     * Assign GitHub logins, passed as one array: `assign(["octocat"])` (additive; GitHub ignores
+     * ones already assigned). Refuses an empty list or a blank login.
+     */
+    async assign(assignees) {
+        const names = (0, arguments_1.nameList)(assignees, "assign", "assignee");
         const { owner, repo } = this.repoRef();
-        return this.api.gh.issues_add_assignees({ owner, repo, issue_number: this.number, assignees });
+        return this.api.gh["issues/add-assignees"]({ owner, repo, issue_number: this.number, body: { assignees: names } });
     }
 }
 exports.GitHubIssue = GitHubIssue;

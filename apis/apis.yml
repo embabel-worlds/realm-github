@@ -2,21 +2,30 @@
 #
 # Curation strategy: the full spec is ~600 operations. Even narrowing
 # to five tag groups (issues, pulls, repos, users, search) leaves ~150
-# ops — too much for the chat prompt once typed responses are inlined.
-# Instead we pin an explicit operationIds allowlist of the ~15 ops that
-# cover ~95% of common chat tasks. Add more here when a need arises.
+# ops, too much for the chat prompt once typed responses are inlined.
+# Instead we pin an explicit allowlist of 36 ops that cover the
+# common chat tasks: reads under `operation-ids`, writes under
+# `write-operation-ids`. An id goes in one list, never both. Add more
+# here when a need arises.
 #
 # Auth: GitHub OAuth (OAuth App or GitHub App user-to-server flow).
 # Operator-supplied `client_id` + `client_secret` are stored in the
 # assistant's Wallet under provider name `gh`. Access tokens are
 # persisted under `gh_OAUTH2#${login}` after the user authorizes.
 # See README.md for setup.
-# VENDORED, TRIMMED spec (sibling file) — never the remote URL: a remote spec is
+# VENDORED, TRIMMED spec (sibling file), never the remote URL: a remote spec is
 # re-downloaded (12.8MB) per workspace build, per user, serially at boot; the local
 # file parses once per process (mtime-keyed, shared across users). The file holds the
-# operation-ids pinned below plus their $ref closure (435KB). When ADDING an operation
-# id, regenerate it from the official github/rest-api-description spec with
-# embabel.com/assistant scripts/test/trim-openapi.py.
+# operation-ids and write-operation-ids pinned below plus their $ref closure (435KB).
+# When ADDING an operation id, regenerate it from the official
+# github/rest-api-description spec with embabel.com/assistant
+# scripts/test/trim-openapi.py, then reduce each write's request body by hand to
+# `content` > `application/json` > `schema` using only type, properties, required,
+# items, enum and description. The host refuses anything else (oneOf, nullable,
+# minItems, format, a request-level `required`), so pick the one form of each field
+# that GitHub accepts and that means the same thing (for example label names as
+# strings, a milestone as its integer number). tests/gateway-contract.test.ts checks
+# the subset and that the verbs' calls fit it.
 - url: "api.github.com.json"
   name: gh
   type: openapi
@@ -44,32 +53,36 @@
       method: GET
       account-id-field: login
       display-name-field: name
-  operation-ids:
-    # Issues
-    - issues/list-for-repo
-    - issues/get
+  # Writes are listed apart from reads: a read is always a GET with no body.
+  # A write takes its request body under the reserved `body` argument; every
+  # other argument is a path or query parameter.
+  write-operation-ids:
     - issues/create
     - issues/update
-    - issues/list-comments
     - issues/create-comment
     # Verb write-backs on a materialized GitHubIssue (src/api/issue.ts):
     # add-labels / add-assignees are additive (idempotent per label/assignee),
     # the honest fit for `issue.addLabels(...)` / `issue.assign(...)`.
     - issues/add-labels
     - issues/add-assignees
+    - pulls/create
+    # Verb write-backs on a materialized GitHubPullRequest (src/api/pull-request.ts).
+    # (close/reopen/comment/addLabels/assign reuse the issues/* ops above: a PR
+    # IS an issue for state, comments, labels and assignees.)
+    - pulls/merge
+    - pulls/request-reviewers
+  operation-ids:
+    # Issues
+    - issues/list-for-repo
+    - issues/get
+    - issues/list-comments
     # Pull requests
     - pulls/list
     - pulls/get
-    - pulls/create
     - pulls/list-files
     - pulls/list-commits
     - pulls/list-reviews
     - pulls/list-review-comments
-    - pulls/merge
-    # Verb write-back on a materialized GitHubPullRequest (src/api/pull-request.ts).
-    # (close/reopen/comment/addLabels/assign reuse the issues/* ops above — a PR
-    # IS an issue for state, comments, labels and assignees.)
-    - pulls/request-reviewers
     # Repositories
     - repos/get
     - repos/list-for-user

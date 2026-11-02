@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "generatedAt": "2026-06-22T08:38:56.269Z",
+  "generatedAt": "2026-11-02T05:18:02.368Z",
   "entries": [
     {
       "namespace": "issue",
       "name": "addLabels",
-      "description": "Add labels (additive; GitHub ignores ones already present).",
+      "description": "Add labels, passed as one array: `addLabels([\"bug\", \"ui\"])` (additive; GitHub ignores ones already present). Refuses an empty list or a blank label.",
       "inputSchema": {
         "type": "array",
         "items": {
@@ -32,7 +32,7 @@
     {
       "namespace": "issue",
       "name": "assign",
-      "description": "Assign GitHub logins (additive; GitHub ignores ones already assigned).",
+      "description": "Assign GitHub logins, passed as one array: `assign([\"octocat\"])` (additive; GitHub ignores ones already assigned). Refuses an empty list or a blank login.",
       "inputSchema": {
         "type": "array",
         "items": {
@@ -291,7 +291,7 @@
     {
       "namespace": "pull_request",
       "name": "addLabels",
-      "description": "Add labels (additive; GitHub ignores ones already present).",
+      "description": "Add labels, passed as one array: `addLabels([\"needs-review\"])` (additive; GitHub ignores ones already present). Refuses an empty list or a blank label.",
       "inputSchema": {
         "type": "array",
         "items": {
@@ -318,7 +318,7 @@
     {
       "namespace": "pull_request",
       "name": "assign",
-      "description": "Assign GitHub logins (additive; distinct from reviewers).",
+      "description": "Assign GitHub logins, passed as one array: `assign([\"octocat\"])` (additive; distinct from reviewers). Refuses an empty list or a blank login.",
       "inputSchema": {
         "type": "array",
         "items": {
@@ -361,24 +361,7 @@
             "type": "string"
           },
           "draft": {
-            "oneOf": [
-              {
-                "type": "undefined"
-              },
-              {
-                "type": "undefined"
-              }
-            ]
-          },
-          "merged": {
-            "oneOf": [
-              {
-                "type": "undefined"
-              },
-              {
-                "type": "undefined"
-              }
-            ]
+            "type": "boolean"
           },
           "html_url": {
             "type": "string"
@@ -386,7 +369,10 @@
           "updated_at": {
             "type": "string"
           }
-        }
+        },
+        "required": [
+          "draft"
+        ]
       },
       "onType": "GitHubPullRequest",
       "className": "GitHubPullRequest"
@@ -521,19 +507,15 @@
             "type": "string"
           },
           "merged": {
-            "oneOf": [
-              {
-                "type": "undefined"
-              },
-              {
-                "type": "undefined"
-              }
-            ]
+            "type": "boolean"
           },
           "message": {
             "type": "string"
           }
-        }
+        },
+        "required": [
+          "merged"
+        ]
       },
       "onType": "GitHubPullRequest",
       "className": "GitHubPullRequest"
@@ -628,24 +610,7 @@
             "type": "string"
           },
           "draft": {
-            "oneOf": [
-              {
-                "type": "undefined"
-              },
-              {
-                "type": "undefined"
-              }
-            ]
-          },
-          "merged": {
-            "oneOf": [
-              {
-                "type": "undefined"
-              },
-              {
-                "type": "undefined"
-              }
-            ]
+            "type": "boolean"
           },
           "html_url": {
             "type": "string"
@@ -653,7 +618,10 @@
           "updated_at": {
             "type": "string"
           }
-        }
+        },
+        "required": [
+          "draft"
+        ]
       },
       "onType": "GitHubPullRequest",
       "className": "GitHubPullRequest"
@@ -687,7 +655,7 @@
     {
       "namespace": "pull_request",
       "name": "requestReviewers",
-      "description": "Request reviews from GitHub logins (additive).",
+      "description": "Request reviews from GitHub logins, passed as one array: `requestReviewers([\"alice\"])` (additive). Refuses an empty list, which GitHub rejects, or a blank login.",
       "inputSchema": {
         "type": "array",
         "items": {
@@ -710,24 +678,7 @@
             "type": "string"
           },
           "draft": {
-            "oneOf": [
-              {
-                "type": "undefined"
-              },
-              {
-                "type": "undefined"
-              }
-            ]
-          },
-          "merged": {
-            "oneOf": [
-              {
-                "type": "undefined"
-              },
-              {
-                "type": "undefined"
-              }
-            ]
+            "type": "boolean"
           },
           "html_url": {
             "type": "string"
@@ -735,7 +686,10 @@
           "updated_at": {
             "type": "string"
           }
-        }
+        },
+        "required": [
+          "draft"
+        ]
       },
       "onType": "GitHubPullRequest",
       "className": "GitHubPullRequest"
