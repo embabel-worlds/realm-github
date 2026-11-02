@@ -31,34 +31,38 @@ export interface RepoRef {
  * The `gateway.gh` ops the verbs call, typed. The pack types the slice it uses
  * (cf. `Movie`'s `MovieGateway`) so method bodies and return types are fully
  * typed; swap for the generated `GatewayContext` when `embabel-pack sync` lands.
- * Names are the OpenAPI operationIds, `/` and `-` → `_` (see README "Namespace").
+ * Names are the OpenAPI operationIds verbatim, so they are called with brackets:
+ * `gh["issues/update"](...)`. A write passes its request body under `body`;
+ * every other argument is a path or query parameter (see README "Namespace").
  */
 interface GitHubGateway {
   gh: {
-    issues_update(args: {
+    "issues/update"(args: {
       owner: string;
       repo: string;
       issue_number: number;
-      state?: "open" | "closed";
-      state_reason?: "completed" | "not_planned" | "reopened";
+      body: {
+        state?: "open" | "closed";
+        state_reason?: "completed" | "not_planned" | "reopened";
+      };
     }): Promise<GitHubIssueRecord>;
-    issues_create_comment(args: {
+    "issues/create-comment"(args: {
       owner: string;
       repo: string;
       issue_number: number;
-      body: string;
+      body: { body: string };
     }): Promise<GitHubComment>;
-    issues_add_labels(args: {
+    "issues/add-labels"(args: {
       owner: string;
       repo: string;
       issue_number: number;
-      labels: string[];
+      body: { labels: string[] };
     }): Promise<unknown>;
-    issues_add_assignees(args: {
+    "issues/add-assignees"(args: {
       owner: string;
       repo: string;
       issue_number: number;
-      assignees: string[];
+      body: { assignees: string[] };
     }): Promise<unknown>;
   };
 }
@@ -146,30 +150,31 @@ export class GitHubIssue extends Entity {
   /** Close the issue. `reason` records why (GitHub `state_reason`). Idempotent. */
   async close(reason: "completed" | "not_planned" = "completed"): Promise<GitHubIssueRecord> {
     const { owner, repo } = this.repoRef();
-    return this.api.gh.issues_update({ owner, repo, issue_number: this.number, state: "closed", state_reason: reason });
+    return this.api.gh["issues/update"]({ owner, repo, issue_number: this.number, body: { state: "closed", state_reason: reason } });
   }
 
   /** Reopen the issue. Idempotent. */
   async reopen(): Promise<GitHubIssueRecord> {
     const { owner, repo } = this.repoRef();
-    return this.api.gh.issues_update({ owner, repo, issue_number: this.number, state: "open", state_reason: "reopened" });
+    return this.api.gh["issues/update"]({ owner, repo, issue_number: this.number, body: { state: "open", state_reason: "reopened" } });
   }
 
   /** Add a comment. */
   async comment(body: string): Promise<GitHubComment> {
     const { owner, repo } = this.repoRef();
-    return this.api.gh.issues_create_comment({ owner, repo, issue_number: this.number, body });
+    return this.api.gh["issues/create-comment"]({ owner, repo, issue_number: this.number, body: { body } });
   }
 
-  /** Add labels (additive; GitHub ignores ones already present). */
+  /** Add labels (additive; GitHub ignores ones already present). Refuses an empty list. */
   async addLabels(...labels: string[]): Promise<unknown> {
+    if (labels.length === 0) throw new Error("addLabels needs at least one label");
     const { owner, repo } = this.repoRef();
-    return this.api.gh.issues_add_labels({ owner, repo, issue_number: this.number, labels });
+    return this.api.gh["issues/add-labels"]({ owner, repo, issue_number: this.number, body: { labels } });
   }
 
   /** Assign GitHub logins (additive; GitHub ignores ones already assigned). */
   async assign(...assignees: string[]): Promise<unknown> {
     const { owner, repo } = this.repoRef();
-    return this.api.gh.issues_add_assignees({ owner, repo, issue_number: this.number, assignees });
+    return this.api.gh["issues/add-assignees"]({ owner, repo, issue_number: this.number, body: { assignees } });
   }
 }

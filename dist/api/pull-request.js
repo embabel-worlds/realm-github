@@ -16,8 +16,8 @@ const DAY_MS = 86_400_000;
  *    these read `state` / `draft` / `comments` / `created_at` — not `labels` /
  *    `requested_reviewers` (objects/arrays, not stored).
  *  - **effectful** — write back through `this.gateway.gh.*`. State / comment /
- *    labels / assignees reuse the `issues_*` ops (a PR is an issue for those);
- *    `merge` and `requestReviewers` use `pulls_*`. GitHub has no `If-Match`
+ *    labels / assignees reuse the `issues/*` ops (a PR is an issue for those);
+ *    `merge` and `requestReviewers` use `pulls/*`. GitHub has no `If-Match`
  *    precondition here, so the verbs are written to be idempotent where the API
  *    allows (closing a closed PR, adding a present label).
  *
@@ -79,44 +79,50 @@ class GitHubPullRequest extends runtime_types_1.Entity {
     /** Merge the PR. `method` selects merge/squash/rebase (default squash). */
     async merge(args = {}) {
         const { owner, repo } = this.repoRef();
-        return this.api.gh.pulls_merge({
+        return this.api.gh["pulls/merge"]({
             owner,
             repo,
             pull_number: this.number,
-            merge_method: args.method ?? "squash",
-            commit_title: args.title,
-            commit_message: args.message,
+            body: {
+                merge_method: args.method ?? "squash",
+                commit_title: args.title,
+                commit_message: args.message,
+            },
         });
     }
-    /** Request reviews from GitHub logins (additive). */
+    /** Request reviews from GitHub logins (additive). Refuses an empty list, which GitHub rejects. */
     async requestReviewers(...reviewers) {
+        if (reviewers.length === 0)
+            throw new Error("requestReviewers needs at least one reviewer");
         const { owner, repo } = this.repoRef();
-        return this.api.gh.pulls_request_reviewers({ owner, repo, pull_number: this.number, reviewers });
+        return this.api.gh["pulls/request-reviewers"]({ owner, repo, pull_number: this.number, body: { reviewers } });
     }
     /** Close the PR without merging. `reason` records why. Idempotent. */
     async close(reason = "not_planned") {
         const { owner, repo } = this.repoRef();
-        return this.api.gh.issues_update({ owner, repo, issue_number: this.number, state: "closed", state_reason: reason });
+        return this.api.gh["issues/update"]({ owner, repo, issue_number: this.number, body: { state: "closed", state_reason: reason } });
     }
     /** Reopen the PR. Idempotent. */
     async reopen() {
         const { owner, repo } = this.repoRef();
-        return this.api.gh.issues_update({ owner, repo, issue_number: this.number, state: "open", state_reason: "reopened" });
+        return this.api.gh["issues/update"]({ owner, repo, issue_number: this.number, body: { state: "open", state_reason: "reopened" } });
     }
     /** Add a comment (PR comments go through the issues endpoint). */
     async comment(body) {
         const { owner, repo } = this.repoRef();
-        return this.api.gh.issues_create_comment({ owner, repo, issue_number: this.number, body });
+        return this.api.gh["issues/create-comment"]({ owner, repo, issue_number: this.number, body: { body } });
     }
-    /** Add labels (additive; GitHub ignores ones already present). */
+    /** Add labels (additive; GitHub ignores ones already present). Refuses an empty list. */
     async addLabels(...labels) {
+        if (labels.length === 0)
+            throw new Error("addLabels needs at least one label");
         const { owner, repo } = this.repoRef();
-        return this.api.gh.issues_add_labels({ owner, repo, issue_number: this.number, labels });
+        return this.api.gh["issues/add-labels"]({ owner, repo, issue_number: this.number, body: { labels } });
     }
     /** Assign GitHub logins (additive; distinct from reviewers). */
     async assign(...assignees) {
         const { owner, repo } = this.repoRef();
-        return this.api.gh.issues_add_assignees({ owner, repo, issue_number: this.number, assignees });
+        return this.api.gh["issues/add-assignees"]({ owner, repo, issue_number: this.number, body: { assignees } });
     }
 }
 exports.GitHubPullRequest = GitHubPullRequest;

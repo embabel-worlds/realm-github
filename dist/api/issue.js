@@ -73,27 +73,29 @@ class GitHubIssue extends runtime_types_1.Entity {
     /** Close the issue. `reason` records why (GitHub `state_reason`). Idempotent. */
     async close(reason = "completed") {
         const { owner, repo } = this.repoRef();
-        return this.api.gh.issues_update({ owner, repo, issue_number: this.number, state: "closed", state_reason: reason });
+        return this.api.gh["issues/update"]({ owner, repo, issue_number: this.number, body: { state: "closed", state_reason: reason } });
     }
     /** Reopen the issue. Idempotent. */
     async reopen() {
         const { owner, repo } = this.repoRef();
-        return this.api.gh.issues_update({ owner, repo, issue_number: this.number, state: "open", state_reason: "reopened" });
+        return this.api.gh["issues/update"]({ owner, repo, issue_number: this.number, body: { state: "open", state_reason: "reopened" } });
     }
     /** Add a comment. */
     async comment(body) {
         const { owner, repo } = this.repoRef();
-        return this.api.gh.issues_create_comment({ owner, repo, issue_number: this.number, body });
+        return this.api.gh["issues/create-comment"]({ owner, repo, issue_number: this.number, body: { body } });
     }
-    /** Add labels (additive; GitHub ignores ones already present). */
+    /** Add labels (additive; GitHub ignores ones already present). Refuses an empty list. */
     async addLabels(...labels) {
+        if (labels.length === 0)
+            throw new Error("addLabels needs at least one label");
         const { owner, repo } = this.repoRef();
-        return this.api.gh.issues_add_labels({ owner, repo, issue_number: this.number, labels });
+        return this.api.gh["issues/add-labels"]({ owner, repo, issue_number: this.number, body: { labels } });
     }
     /** Assign GitHub logins (additive; GitHub ignores ones already assigned). */
     async assign(...assignees) {
         const { owner, repo } = this.repoRef();
-        return this.api.gh.issues_add_assignees({ owner, repo, issue_number: this.number, assignees });
+        return this.api.gh["issues/add-assignees"]({ owner, repo, issue_number: this.number, body: { assignees } });
     }
 }
 exports.GitHubIssue = GitHubIssue;

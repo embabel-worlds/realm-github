@@ -52,54 +52,59 @@ describe("GitHubPullRequest pure verbs", () => {
 });
 
 describe("GitHubPullRequest effectful verbs", () => {
-  it("merge defaults to squash and passes pull_number to pulls_merge", async () => {
+  it("merge defaults to squash and passes pull_number to pulls/merge", async () => {
     const pulls_merge = vi.fn().mockResolvedValue({ merged: true, sha: "abc" });
-    const r = await pr({}, { pulls_merge }).merge();
+    const r = await pr({}, { "pulls/merge": pulls_merge }).merge();
 
     expect(pulls_merge).toHaveBeenCalledWith({
       owner: "octocat",
       repo: "hello-world",
       pull_number: 7,
-      merge_method: "squash",
-      commit_title: undefined,
-      commit_message: undefined,
+      body: { merge_method: "squash", commit_title: undefined, commit_message: undefined },
     });
     expect(r).toMatchObject({ merged: true });
   });
 
   it("merge honours an explicit method + commit message", async () => {
     const pulls_merge = vi.fn().mockResolvedValue({ merged: true });
-    await pr({}, { pulls_merge }).merge({ method: "rebase", title: "Ship it", message: "details" });
+    await pr({}, { "pulls/merge": pulls_merge }).merge({ method: "rebase", title: "Ship it", message: "details" });
     expect(pulls_merge).toHaveBeenCalledWith({
       owner: "octocat",
       repo: "hello-world",
       pull_number: 7,
-      merge_method: "rebase",
-      commit_title: "Ship it",
-      commit_message: "details",
+      body: { merge_method: "rebase", commit_title: "Ship it", commit_message: "details" },
     });
   });
 
   it("requestReviewers passes the reviewers array", async () => {
     const pulls_request_reviewers = vi.fn().mockResolvedValue({ number: 7 });
-    await pr({}, { pulls_request_reviewers }).requestReviewers("alice", "bob");
+    await pr({}, { "pulls/request-reviewers": pulls_request_reviewers }).requestReviewers("alice", "bob");
     expect(pulls_request_reviewers).toHaveBeenCalledWith({
       owner: "octocat",
       repo: "hello-world",
       pull_number: 7,
-      reviewers: ["alice", "bob"],
+      body: { reviewers: ["alice", "bob"] },
     });
+  });
+
+  it("requestReviewers and addLabels refuse an empty list before calling GitHub", async () => {
+    const pulls_request_reviewers = vi.fn();
+    const issues_add_labels = vi.fn();
+    const p = pr({}, { "pulls/request-reviewers": pulls_request_reviewers, "issues/add-labels": issues_add_labels });
+    await expect(p.requestReviewers()).rejects.toThrow(/at least one reviewer/);
+    await expect(p.addLabels()).rejects.toThrow(/at least one label/);
+    expect(pulls_request_reviewers).not.toHaveBeenCalled();
+    expect(issues_add_labels).not.toHaveBeenCalled();
   });
 
   it("close uses the issues endpoint with the PR number", async () => {
     const issues_update = vi.fn().mockResolvedValue({ number: 7, state: "closed" });
-    await pr({}, { issues_update }).close();
+    await pr({}, { "issues/update": issues_update }).close();
     expect(issues_update).toHaveBeenCalledWith({
       owner: "octocat",
       repo: "hello-world",
       issue_number: 7,
-      state: "closed",
-      state_reason: "not_planned",
+      body: { state: "closed", state_reason: "not_planned" },
     });
   });
 
@@ -107,20 +112,20 @@ describe("GitHubPullRequest effectful verbs", () => {
     const issues_create_comment = vi.fn().mockResolvedValue({ id: 1 });
     const issues_add_labels = vi.fn().mockResolvedValue([]);
     const issues_add_assignees = vi.fn().mockResolvedValue([]);
-    const p = pr({}, { issues_create_comment, issues_add_labels, issues_add_assignees });
+    const p = pr({}, { "issues/create-comment": issues_create_comment, "issues/add-labels": issues_add_labels, "issues/add-assignees": issues_add_assignees });
 
     await p.comment("LGTM");
     await p.addLabels("needs-review");
     await p.assign("octocat");
 
-    expect(issues_create_comment).toHaveBeenCalledWith({ owner: "octocat", repo: "hello-world", issue_number: 7, body: "LGTM" });
-    expect(issues_add_labels).toHaveBeenCalledWith({ owner: "octocat", repo: "hello-world", issue_number: 7, labels: ["needs-review"] });
-    expect(issues_add_assignees).toHaveBeenCalledWith({ owner: "octocat", repo: "hello-world", issue_number: 7, assignees: ["octocat"] });
+    expect(issues_create_comment).toHaveBeenCalledWith({ owner: "octocat", repo: "hello-world", issue_number: 7, body: { body: "LGTM" } });
+    expect(issues_add_labels).toHaveBeenCalledWith({ owner: "octocat", repo: "hello-world", issue_number: 7, body: { labels: ["needs-review"] } });
+    expect(issues_add_assignees).toHaveBeenCalledWith({ owner: "octocat", repo: "hello-world", issue_number: 7, body: { assignees: ["octocat"] } });
   });
 
   it("an effectful verb refuses when the repo can't be located", async () => {
     const pulls_merge = vi.fn();
-    await expect(pr({ html_url: "garbage" }, { pulls_merge }).merge()).rejects.toThrow(/cannot locate/);
+    await expect(pr({ html_url: "garbage" }, { "pulls/merge": pulls_merge }).merge()).rejects.toThrow(/cannot locate/);
     expect(pulls_merge).not.toHaveBeenCalled();
   });
 });
