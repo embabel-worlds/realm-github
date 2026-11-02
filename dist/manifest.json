@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "generatedAt": "2026-06-22T08:38:56.269Z",
+  "generatedAt": "2026-11-02T02:14:24.348Z",
   "entries": [
     {
       "namespace": "issue",
       "name": "addLabels",
-      "description": "Add labels (additive; GitHub ignores ones already present).",
+      "description": "Add labels (additive; GitHub ignores ones already present). Refuses an empty list.",
       "inputSchema": {
         "type": "array",
         "items": {
@@ -291,7 +291,7 @@
     {
       "namespace": "pull_request",
       "name": "addLabels",
-      "description": "Add labels (additive; GitHub ignores ones already present).",
+      "description": "Add labels (additive; GitHub ignores ones already present). Refuses an empty list.",
       "inputSchema": {
         "type": "array",
         "items": {
@@ -687,7 +687,7 @@
     {
       "namespace": "pull_request",
       "name": "requestReviewers",
-      "description": "Request reviews from GitHub logins (additive).",
+      "description": "Request reviews from GitHub logins (additive). Refuses an empty list, which GitHub rejects.",
       "inputSchema": {
         "type": "array",
         "items": {
