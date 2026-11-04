@@ -50,6 +50,12 @@ describe("GitHubIssue pure verbs", () => {
     expect(i.ref()).toBe("octocat/hello-world#42");
   });
 
+  it("repoRef locates a pull request listed among the issues", () => {
+    const i = issue({ html_url: "https://github.com/octocat/hello-world/pull/7", number: 7 });
+    expect(i.repoRef()).toEqual({ owner: "octocat", repo: "hello-world" });
+    expect(i.ref()).toBe("octocat/hello-world#7");
+  });
+
   it("repoRef throws when html_url can't be located", () => {
     expect(() => issue({ html_url: "not-a-github-url" }).repoRef()).toThrow(/cannot locate owner\/repo/);
   });

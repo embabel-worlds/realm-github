@@ -11,6 +11,7 @@
   webhook:
     signature: hmac-sha256
     signature-secret: GITHUB_WEBHOOK_SECRET
+    tenancy: path-token
     mapping:
       id:           "$.issue.id"
       occurredAt:   "$.issue.updated_at"

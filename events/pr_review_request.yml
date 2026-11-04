@@ -27,6 +27,7 @@
     # the dispatcher's current "match by source name" semantics.
     signature: hmac-sha256
     signature-secret: GITHUB_WEBHOOK_SECRET
+    tenancy: path-token
     mapping:
       # Required Signal wire fields
       id:           "$.pull_request.id"
