@@ -123,7 +123,17 @@
       description: "The Person email this login was resolved from (echoed by the producer)."
 
 # On-demand virtual node: a GitHub issue, fetched only when a query traverses to
-# it from a GitHubIdentity, materialized transiently, rolled back. Batched by the
+# it from a GitHubIdentity, materialized transiently, rolled back.
+#
+# A GitHub issue IS an Issue of the dev vocabulary (realm-dev-vocabulary, installed first):
+# `parents: [Issue]` puts the shared label on every issue this realm materializes, so a view
+# written against :Issue is answered by GitHub without naming it, and keeps being answered by
+# GitLab or Jira beside it. The contract — key, repositoryKey, status, resolution, kind, labels,
+# authorKind, authorRole, assigneeLogins, isChangeRequest, openedAt/updatedAt/closedAt,
+# commentCount, sourceUrl — is projected by `project:` and `compute:` blocks on each issue
+# producer (producers/github.yml), the way realm-chatwoot maps a conversation onto SupportCase.
+# visibility / userAnchor / description / identity are restated because a child inherits
+# properties, labels and lifecycle but not those (realm-spec LABELS_AND_COMPOSITION.md §2). Batched by the
 # `issuesByAuthor` producer (one search, `author:` OR-qualifiers), linked by
 # id-match on the login (GitHubIdentity.login == issue.user.login).
 #
@@ -136,7 +146,7 @@
 - name: GitHubRepository
   visibility: internal
   userAnchor: false
-  description: "A GitHub repository. Pin it ONLY as a single literal {full_name:'owner/repo'} (e.g. {full_name:'embabel/me'}) and traverse HAS_ISSUE to fetch its issues on demand."
+  description: "A GitHub repository. Pin it ONLY as a single literal {full_name:'owner/repo'} (e.g. {full_name:'embabel/me'}) and traverse HAS_ISSUE for its issues, HAS_PULL_REQUEST for its pull requests, HAS_COMMENT and HAS_REVIEW_COMMENT for every comment in it, HAS_COMMIT for its commits — each fetched on demand."
   properties:
     full_name:
       description: "The repository's ONLY identity, e.g. 'embabel/me'. Pin a repo as a SINGLE literal {full_name:'owner/repo'} — there are NO separate name/owner properties to filter on, and a repo is NOT matched via html_url. (The producer splits full_name into owner/repo path params internally.)"
@@ -144,9 +154,10 @@
         identity: "true"
 
 - name: GitHubIssue
+  parents: [Issue]
   visibility: internal
   userAnchor: false
-  description: "A GitHub issue, fetched on demand by author/assignee (off a GitHubIdentity) or by repo (off a GitHubRepository)."
+  description: "A GitHub issue, fetched on demand by author/assignee (off a GitHubIdentity) or by repo (off a GitHubRepository). It is an Issue of the dev vocabulary: name :Issue to read every installed tracker, :GitHubIssue for GitHub alone. i.authorKind says whether a person, a bot, a coding agent or an assisted person raised it; i.status is open/closed; i.key is 'github.com/owner/repo#number'. Issues fetched BY REPO include pull requests (a PR is an issue to GitHub's REST list): they carry isChangeRequest = true, so filter it out for issues alone."
   virtualJoins:
     - anchorLabel: GitHubIdentity
       relationship: RAISED
@@ -185,6 +196,9 @@
     title: "Issue title."
     number: "Issue number within its repo."
     html_url: "Web URL of the issue (owner/repo parse out of this for write-backs)."
+    owner: "Repository owner as GitHub spells it, from html_url. With repo and number, the key a per-issue fetch (comments) is made under."
+    repo: "Repository name as GitHub spells it, from html_url."
+    mergedAt: "When this issue, being a pull request, was merged; null otherwise. Lifted so a PR reached through the issue door (which GitHub narrows by updatedAt) still says whether it merged."
     # Scalar search-item fields the verb class (src/api/issue.ts) reads. They
     # persist automatically — the materializer stores every scalar in the record;
     # declaring them here just makes them visible in the schema. (Nested fields
@@ -246,9 +260,10 @@
 #   MATCH (me:AssistantUser)-[:EMAILED]->(p:Person)-[:HAS_GITHUB]->(g:GitHubIdentity)-[:OPENED]->(pr:GitHubPullRequest)
 #   RETURN DISTINCT p.name
 - name: GitHubPullRequest
+  parents: [ChangeRequest]
   visibility: internal
   userAnchor: false
-  description: "A GitHub pull request, fetched on demand by author/assignee and linked to a GitHubIdentity."
+  description: "A GitHub pull request, fetched on demand by author/assignee and linked to a GitHubIdentity. It is a ChangeRequest of the dev vocabulary: name :ChangeRequest to read every installed forge, :GitHubPullRequest for GitHub alone. pr.authorKind says whether a person, a bot, a coding agent or an assisted person opened it; pr.status is open/merged/closed (GitHub's own state, open/closed, stays in pr.state); pr.key is 'github.com/owner/repo#number'."
   virtualJoins:
     - anchorLabel: GitHubIdentity
       relationship: OPENED         # (g:GitHubIdentity)-[:OPENED]->(pr) = PRs this login authored
@@ -277,6 +292,8 @@
     title: "PR title."
     number: "PR number within its repo (the pulls/* ops' pull_number)."
     html_url: "Web URL of the PR (owner/repo parse out of this for write-backs)."
+    owner: "Repository owner as GitHub spells it, from html_url. With repo and number, the key a per-issue fetch (comments, reviews, commits, files) is made under."
+    repo: "Repository name as GitHub spells it, from html_url."
     # Scalar search-item fields the verb class reads (persist automatically; see
     # the GitHubIssue note). `draft` distinguishes a work-in-progress PR.
     state: "'open' or 'closed'."
@@ -302,9 +319,178 @@
         RETURN DISTINCT pr.authorLogin AS login, p.name AS name,
                coalesce(e.address, p.primaryEmail) AS email
         ORDER BY login LIMIT 200
+    # POSITIVE — the vocabulary's authorKind is a stored scalar on every PR: GROUP BY it for the
+    # human/bot/agent/assisted split, and name :ChangeRequest when the question is not GitHub-specific.
+    - q: "how many pull requests in owner/repo were opened by coding agents versus people, by month"
+      cypher: |
+        MATCH (:GitHubRepository {full_name:'owner/repo'})-[:HAS_PULL_REQUEST]->(pr:ChangeRequest)
+        WITH substring(pr.openedAt, 0, 7) AS month, pr.authorKind AS kind, count(*) AS c
+        RETURN month, kind, c ORDER BY month, kind LIMIT 200
     # POSITIVE — PR opener counts per login in a repo (the login IS the answer; no bridge needed):
     - q: "who opened the most pull requests in owner/repo"
       cypher: |
         MATCH (:GitHubRepository {full_name:'owner/repo'})-[:HAS_PULL_REQUEST]->(pr:GitHubPullRequest)
         WITH pr.authorLogin AS login, count(*) AS c WHERE login IS NOT NULL
         RETURN login, c ORDER BY c DESC LIMIT 200
+
+# ---------------------------------------------------------------------------------------------
+# What is SAID and what is CHANGED — comments, reviews, commits and file changes, each a child of the
+# dev vocabulary's type of the same idea, each fetched on demand when a query reaches it. The joins
+# say which door answers which hop (producers/github.yml explains the two doors to comments).
+
+- name: GitHubComment
+  parents: [Comment]
+  visibility: internal
+  userAnchor: false
+  description: "One comment on a GitHub issue or pull request — on the conversation (kind 'conversation') or on a line of the diff (kind 'review-line'). A Comment of the dev vocabulary: c.authorKind is human, bot, agent or assisted; c.subjectKey is the Issue's or ChangeRequest's key; c.subjectKind says which. Reach ALL of a repository's comments from (:GitHubRepository)-[:HAS_COMMENT]-> and -[:HAS_REVIEW_COMMENT]-> (newest first, a literal createdAt lower bound pushed to GitHub), or ONE issue's or PR's from the issue or PR itself — never both paths on one comment."
+  virtualJoins:
+    - anchorLabel: GitHubRepository
+      relationship: HAS_COMMENT
+      keyField: full_name
+      recordKeyField: full_name
+      producer: commentsByRepo
+      maxFanoutTotal: 10000
+      description: "Every conversation comment in the repository, on issues and pull requests alike, newest first, up to 1,000. Filter on a projected createdAt lower bound to push `since` to GitHub."
+    - anchorLabel: GitHubRepository
+      relationship: HAS_REVIEW_COMMENT
+      keyField: full_name
+      recordKeyField: full_name
+      producer: reviewCommentsByRepo
+      maxFanoutTotal: 10000
+      description: "Every review-line comment in the repository — comments on lines of a pull request's diff — newest first, up to 1,000."
+    - anchorLabel: GitHubIssue
+      relationship: HAS_COMMENT
+      producerKeyFields: [owner, repo, number]
+      recordKeyField: subjectCallKey
+      producer: commentsByIssue
+      maxAnchors: 100
+      maxFanoutTotal: 5000
+      description: "The comments on ONE issue, one call per issue — narrow the issues first."
+    - anchorLabel: GitHubPullRequest
+      relationship: HAS_COMMENT
+      producerKeyFields: [owner, repo, number]
+      recordKeyField: subjectCallKey
+      producer: commentsByIssue
+      maxAnchors: 100
+      maxFanoutTotal: 5000
+      description: "The conversation comments on ONE pull request (a PR's conversation is its issue's), one call per PR."
+    - anchorLabel: GitHubPullRequest
+      relationship: HAS_REVIEW_COMMENT
+      producerKeyFields: [owner, repo, number]
+      recordKeyField: subjectCallKey
+      producer: reviewCommentsByPull
+      maxAnchors: 100
+      maxFanoutTotal: 5000
+      description: "The review-line comments on ONE pull request, one call per PR."
+    - anchorLabel: GitHubIssue
+      relationship: HAS_REVIEW_COMMENT
+      producerKeyFields: [owner, repo, number]
+      recordKeyField: subjectCallKey
+      producer: reviewCommentsByPull
+      maxAnchors: 100
+      maxFanoutTotal: 5000
+      description: "The same, from a pull request reached through the issue door (isChangeRequest = true) — the door GitHub narrows by updatedAt. Filter to change requests first: a true issue has no review comments and the call answers nothing."
+  properties:
+    id:
+      description: "GitHub's comment id — identity."
+      metadata:
+        identity: "true"
+    subjectCallKey: "`owner/repo/number` of the issue or PR it is on — the key a per-subject fetch is made under, and the join link back."
+    body: "The comment, as GitHub holds it (markdown)."
+    authorLogin: "Who wrote it."
+    html_url: "Where it is on GitHub; the same as sourceUrl."
+
+- name: GitHubReview
+  parents: [Review]
+  visibility: internal
+  userAnchor: false
+  description: "One review submitted on a pull request: approved, changes requested, or a comment-only pass. A Review of the dev vocabulary: r.verdict, r.authorKind, r.submittedAt. Reached from (:GitHubPullRequest)-[:HAS_REVIEW]->, one call per PR — narrow the PRs first."
+  virtualJoins:
+    - anchorLabel: GitHubPullRequest
+      relationship: HAS_REVIEW
+      producerKeyFields: [owner, repo, number]
+      recordKeyField: subjectCallKey
+      producer: reviewsByPull
+      maxAnchors: 100
+      maxFanoutTotal: 5000
+      description: "The reviews on ONE pull request, in submission order."
+    - anchorLabel: GitHubIssue
+      relationship: HAS_REVIEW
+      producerKeyFields: [owner, repo, number]
+      recordKeyField: subjectCallKey
+      producer: reviewsByPull
+      maxAnchors: 100
+      maxFanoutTotal: 5000
+      description: "The same, from a pull request reached through the issue door (isChangeRequest = true), which GitHub narrows by updatedAt. Filter to change requests first."
+  properties:
+    id:
+      description: "GitHub's review id — identity."
+      metadata:
+        identity: "true"
+    subjectCallKey: "`owner/repo/number` of the PR — the join link back."
+    state: "GitHub's own word: APPROVED, CHANGES_REQUESTED, COMMENTED, DISMISSED or PENDING; verdict is the vocabulary's."
+    body: "The review's summary text."
+    authorLogin: "Who reviewed."
+
+- name: GitHubCommit
+  parents: [Commit]
+  visibility: internal
+  userAnchor: false
+  description: "One commit in a repository: message, author, parents, and (through CHANGED) the files it touched. A Commit of the dev vocabulary: c.authorKind is 'assisted' when a Co-Authored-By trailer names a coding agent, c.key is 'github.com/owner/repo@sha', c.projectKey is what realm-java-project pins a project by at this commit. Reach a repository's commits from (:GitHubRepository)-[:HAS_COMMIT]-> (newest first on the default branch; literal authoredAt bounds and an authorLogin push since/until/author to GitHub) or a pull request's from (:GitHubPullRequest)-[:HAS_COMMIT]->. No line counts here: they are on the FileChange rows, one hop on."
+  virtualJoins:
+    - anchorLabel: GitHubRepository
+      relationship: HAS_COMMIT
+      keyField: full_name
+      recordKeyField: full_name
+      producer: commitsByRepo
+      maxFanoutTotal: 10000
+      description: "The repository's commits on its default branch, newest first, up to 1,000. Filter on projected authoredAt bounds or an authorLogin to push the filter to GitHub."
+    - anchorLabel: GitHubPullRequest
+      relationship: HAS_COMMIT
+      producerKeyFields: [owner, repo, number]
+      recordKeyField: subjectCallKey
+      producer: commitsByPull
+      maxAnchors: 100
+      maxFanoutTotal: 5000
+      description: "The commits ONE pull request carries, one call per PR."
+  properties:
+    sha:
+      description: "The commit sha — identity."
+      metadata:
+        identity: "true"
+    subjectCallKey: "`owner/repo/number` of the PR it was fetched under, when it was; empty for a repository's own commits."
+    owner: "Repository owner as GitHub spells it — with repo and sha, the key the commit's files are fetched under."
+    repo: "Repository name as GitHub spells it."
+    html_url: "The commit on GitHub; the same as sourceUrl."
+
+- name: GitHubFileChange
+  parents: [FileChange]
+  visibility: internal
+  userAnchor: false
+  description: "One file as one commit or one pull request changed it: path, status, lines added and deleted, and the changed line ranges from the patch. A FileChange of the dev vocabulary. Reached from (:GitHubCommit)-[:CHANGED]-> (one call per commit, cached a week) or (:GitHubPullRequest)-[:CHANGED]-> (the PR's whole diff in one call). Narrow the commits or PRs first."
+  virtualJoins:
+    - anchorLabel: GitHubCommit
+      relationship: CHANGED
+      producerKeyFields: [owner, repo, sha]
+      recordKeyField: subjectCallKey
+      producer: filesByCommit
+      maxAnchors: 100
+      maxFanoutTotal: 10000
+      description: "The files ONE commit changed, with its counts and patch — one call per commit."
+    - anchorLabel: GitHubPullRequest
+      relationship: CHANGED
+      producerKeyFields: [owner, repo, number]
+      recordKeyField: subjectCallKey
+      producer: filesByPull
+      maxAnchors: 40
+      maxFanoutTotal: 4000
+      description: "The files ONE pull request changes, as its diff stands now — one call per PR."
+  properties:
+    blob_url:
+      description: "The file at the commit on GitHub — identity, since it names both the commit and the path."
+      metadata:
+        identity: "true"
+    subjectCallKey: "`owner/repo/sha` or `owner/repo/number` — the key it was fetched under, and the join link back."
+    filename: "GitHub's name for the path; path is the vocabulary's."
+    changes: { type: int, description: "additions plus deletions, as GitHub counts it." }
+    patch: "The unified diff of this file, when GitHub supplied one (absent for binary and very large files)."

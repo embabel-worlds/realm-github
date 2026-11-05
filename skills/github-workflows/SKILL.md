@@ -17,6 +17,20 @@ or `execute_python`. Never call them as top-level tools.
 **Naming**: method is camelCase, args are snake_case (`per_page`, `issue_number`, `pull_number`, `q`).
 If a call returns `gateway.gh.foo is not a world tool`, the error lists every valid method — pick from it. Never re-send the same call.
 
+## Authorship questions go to the views, not the API
+
+"What share of comments are machine-written", "pull requests by agents versus people", "do
+assisted PRs draw more review", "how big are the agents' commits", "which files change most"
+are ANSWERED views, not things to page out of `gateway.gh` by hand: run `GitHubAuthorship`,
+`GitHubChangeRequestsByAuthorKind`, `GitHubReviewBurden`, `GitHubCommitSize` or
+`GitHubFileHotspots` (`views/vocabulary.yml`) with `repo: owner/repo`. Every issue, PR,
+comment, review and commit the realm reads carries the dev vocabulary's `authorKind` —
+`human`, `bot`, `agent`, `assisted` (a person's record declaring an agent's hand), `unknown`
+— and the vocabulary's labels (`Issue`, `ChangeRequest`, `Comment`, `Review`, `Commit`,
+`FileChange`), so a Cypher question names `:Issue` rather than `:GitHubIssue` unless it is
+GitHub-specific. Repeat the vocabulary's limit in any answer: a person who pasted an agent's
+text with no trailer and no marker counts as human.
+
 ## Cardinal rules
 
 1. **Don't fabricate.** Issue numbers, SHAs, usernames, URLs — every one comes from a tool result.
