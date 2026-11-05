@@ -18,6 +18,22 @@
 # GitHub `repo:owner/name` qualifier and substituted for `{filters}` in `q`, scoping the search
 # AT THE SOURCE. `valuePattern` pulls `owner/repo` out of whatever URL form the predicate used.
 #
+# THE VOCABULARY CONTRACT. GitHubIssue is a child of the dev vocabulary's Issue and
+# GitHubPullRequest of its ChangeRequest (types/github.yml), so each producer maps GitHub's record
+# onto the parent's names. `project:` LIFTS a nested field to a scalar (user.type, labels[*].name);
+# `compute:` says what a field MEANS, as one Cypher expression over the record bound as `r` — the
+# record as GitHub hands it over plus whatever `project` lifted. Computed keys are stored beside the
+# declared ones, so i.authorKind, i.status, i.key read on an :Issue as on a :GitHubIssue. The same
+# block is on every producer of a type, so the contract's names read the same whichever hop fetched
+# the row.
+#
+# authorKind, the field the vocabulary exists for: GitHub marks a machine account as user.type
+# 'Bot' and an app's act as performed_via_github_app. A Bot whose login names a coding agent is
+# 'agent' (the list is the vocabulary's; extend it here when a new one appears); any other Bot or
+# app act is 'bot'; a record whose body carries a Co-Authored-By trailer or Claude Code's
+# "Generated with" marker is 'assisted' — a person's record declaring an agent's hand; a plain
+# User is 'human'. The honest limit: agent text pasted with no marker reads as human.
+#
 # PAGINATION: `paging:` walks pages (sort=updated, size 100, up to maxPages) so an author whose
 # issues exceed one page (e.g. 249 issues) is fully captured — without it the fetch would
 # floor-cap at the first 100 and a cross-identity intersection could miss matches.
@@ -39,6 +55,33 @@
       qualifier: "repo:{value}"
       valuePattern: '(?:github\.com/|repos/)?([\w.-]+/[\w.-]+?)(?:/|$)'
   paging: { style: page, size: 100, maxPages: 10 }
+  project:                           # lifts for the Issue contract (see the header): nested fields as scalars
+    authorLogin: user.login
+    authorType: user.type            # 'User' or 'Bot' — the first word of authorKind
+    viaApp: performed_via_github_app.slug
+    labelNames: "labels[*].name"
+    milestone: milestone.title
+    assigneeLogins: "assignees[*].login"
+    prUrl: pull_request.url          # present only when this 'issue' is a pull request
+    prMergedAt: pull_request.merged_at   # and when it was merged, if it was
+  compute:                           # the Issue contract; `r` is the record plus what project lifted
+    key: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4]) + '#' + toString(r.number)"
+    repositoryKey: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4])"
+    status: "r.state"
+    resolution: "CASE r.state_reason WHEN 'completed' THEN 'completed' WHEN 'not_planned' THEN 'not-planned' WHEN 'duplicate' THEN 'duplicate' ELSE '' END"
+    kind: "CASE WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'bug') THEN 'bug' WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'enhancement' OR toLower(l) CONTAINS 'feature') THEN 'feature' WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'question') THEN 'question' WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'doc') THEN 'documentation' WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'task' OR toLower(l) CONTAINS 'chore') THEN 'task' ELSE '' END"
+    labels: "r.labelNames"
+    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR r.viaApp IS NOT NULL THEN 'bot' WHEN any(l IN split(coalesce(r.body, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) OR coalesce(r.body, '') CONTAINS 'Generated with [Claude Code]' THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
+    authorRole: "CASE r.author_association WHEN 'OWNER' THEN 'owner' WHEN 'MEMBER' THEN 'member' WHEN 'COLLABORATOR' THEN 'collaborator' WHEN 'CONTRIBUTOR' THEN 'contributor' WHEN 'FIRST_TIME_CONTRIBUTOR' THEN 'first-timer' WHEN 'FIRST_TIMER' THEN 'first-timer' WHEN 'NONE' THEN 'outsider' ELSE '' END"
+    isChangeRequest: "r.prUrl IS NOT NULL"
+    mergedAt: "r.prMergedAt"
+    openedAt: "r.created_at"
+    updatedAt: "r.updated_at"
+    closedAt: "r.closed_at"
+    commentCount: "r.comments"
+    sourceUrl: "r.html_url"
+    owner: "split(r.html_url, '/')[3]"              # with repo and number, the key a per-issue fetch (comments, reviews, commits, files) is made under
+    repo: "split(r.html_url, '/')[4]"
   cache:
     kind: ttl
     seconds: 300
@@ -61,6 +104,33 @@
       qualifier: "repo:{value}"
       valuePattern: '(?:github\.com/|repos/)?([\w.-]+/[\w.-]+?)(?:/|$)'
   paging: { style: page, size: 100, maxPages: 10 }
+  project:                           # lifts for the Issue contract (see the header): nested fields as scalars
+    authorLogin: user.login
+    authorType: user.type            # 'User' or 'Bot' — the first word of authorKind
+    viaApp: performed_via_github_app.slug
+    labelNames: "labels[*].name"
+    milestone: milestone.title
+    assigneeLogins: "assignees[*].login"
+    prUrl: pull_request.url          # present only when this 'issue' is a pull request
+    prMergedAt: pull_request.merged_at   # and when it was merged, if it was
+  compute:                           # the Issue contract; `r` is the record plus what project lifted
+    key: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4]) + '#' + toString(r.number)"
+    repositoryKey: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4])"
+    status: "r.state"
+    resolution: "CASE r.state_reason WHEN 'completed' THEN 'completed' WHEN 'not_planned' THEN 'not-planned' WHEN 'duplicate' THEN 'duplicate' ELSE '' END"
+    kind: "CASE WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'bug') THEN 'bug' WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'enhancement' OR toLower(l) CONTAINS 'feature') THEN 'feature' WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'question') THEN 'question' WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'doc') THEN 'documentation' WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'task' OR toLower(l) CONTAINS 'chore') THEN 'task' ELSE '' END"
+    labels: "r.labelNames"
+    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR r.viaApp IS NOT NULL THEN 'bot' WHEN any(l IN split(coalesce(r.body, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) OR coalesce(r.body, '') CONTAINS 'Generated with [Claude Code]' THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
+    authorRole: "CASE r.author_association WHEN 'OWNER' THEN 'owner' WHEN 'MEMBER' THEN 'member' WHEN 'COLLABORATOR' THEN 'collaborator' WHEN 'CONTRIBUTOR' THEN 'contributor' WHEN 'FIRST_TIME_CONTRIBUTOR' THEN 'first-timer' WHEN 'FIRST_TIMER' THEN 'first-timer' WHEN 'NONE' THEN 'outsider' ELSE '' END"
+    isChangeRequest: "r.prUrl IS NOT NULL"
+    mergedAt: "r.prMergedAt"
+    openedAt: "r.created_at"
+    updatedAt: "r.updated_at"
+    closedAt: "r.closed_at"
+    commentCount: "r.comments"
+    sourceUrl: "r.html_url"
+    owner: "split(r.html_url, '/')[3]"              # with repo and number, the key a per-issue fetch (comments, reviews, commits, files) is made under
+    repo: "split(r.html_url, '/')[4]"
   cache:
     kind: ttl
     seconds: 300
@@ -88,9 +158,37 @@
     assigneeLogin: assignee.login    # same for the primary assignee, so "issues assigned to me IN this repo"
                                      # ((g)-[:ASSIGNED]->(i)<-[:HAS_ISSUE]-(repo)) is a SEMIJOIN off the one repo
                                      # fetch — not a per-login issuesByAssignee fan-out (was 27 calls / 45s).
+    authorType: user.type            # lifts for the Issue contract (see the header)
+    viaApp: performed_via_github_app.slug
+    labelNames: "labels[*].name"
+    milestone: milestone.title
+    assigneeLogins: "assignees[*].login"
+    prUrl: pull_request.url          # present only when this 'issue' is a pull request
+    prMergedAt: pull_request.merged_at   # and when it was merged, if it was
   args:
     state: all                       # default is open-only — include closed too
+  pushdown:                          # GitHub applies `since` (on updated_at) itself; everything else is filtered after the read
+    - { property: updatedAt, op: GREATER_THAN_OR_EQUAL, argPath: since, clause: "{value}" }
   paging: { style: page, size: 100, maxPages: 10 }
+  compute:                           # the Issue contract; `r` is the record plus what project lifted
+    key: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4]) + '#' + toString(r.number)"
+    repositoryKey: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4])"
+    status: "r.state"
+    resolution: "CASE r.state_reason WHEN 'completed' THEN 'completed' WHEN 'not_planned' THEN 'not-planned' WHEN 'duplicate' THEN 'duplicate' ELSE '' END"
+    kind: "CASE WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'bug') THEN 'bug' WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'enhancement' OR toLower(l) CONTAINS 'feature') THEN 'feature' WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'question') THEN 'question' WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'doc') THEN 'documentation' WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'task' OR toLower(l) CONTAINS 'chore') THEN 'task' ELSE '' END"
+    labels: "r.labelNames"
+    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR r.viaApp IS NOT NULL THEN 'bot' WHEN any(l IN split(coalesce(r.body, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) OR coalesce(r.body, '') CONTAINS 'Generated with [Claude Code]' THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
+    authorRole: "CASE r.author_association WHEN 'OWNER' THEN 'owner' WHEN 'MEMBER' THEN 'member' WHEN 'COLLABORATOR' THEN 'collaborator' WHEN 'CONTRIBUTOR' THEN 'contributor' WHEN 'FIRST_TIME_CONTRIBUTOR' THEN 'first-timer' WHEN 'FIRST_TIMER' THEN 'first-timer' WHEN 'NONE' THEN 'outsider' ELSE '' END"
+    isChangeRequest: "r.prUrl IS NOT NULL"
+    mergedAt: "r.prMergedAt"
+    openedAt: "r.created_at"
+    updatedAt: "r.updated_at"
+    closedAt: "r.closed_at"
+    commentCount: "r.comments"
+    sourceUrl: "r.html_url"
+    owner: "split(r.html_url, '/')[3]"              # with repo and number, the key a per-issue fetch (comments, reviews, commits, files) is made under
+    repo: "split(r.html_url, '/')[4]"
+  orderedBy: [{ property: openedAt, descending: true }]      # GitHub's issue list is newest-created first, so a capped read is the newest N: a top-k by openedAt stands
   cache:
     kind: ttl
     seconds: 300
@@ -110,9 +208,32 @@
                                      # scalar so "top PR openers in this repo" GROUPS by it and an OPENED
                                      # back-hop onto repo-materialized PRs links via semijoin (no fan-out)
     assigneeLogin: assignee.login    # same for "PRs assigned to me in this repo" (PR ASSIGNED semijoin)
+    authorType: user.type            # lifts for the ChangeRequest contract (see the header)
+    labelNames: "labels[*].name"
+    milestone: milestone.title
+    assigneeLogins: "assignees[*].login"
+    reviewerLogins: "requested_reviewers[*].login"
+    baseBranch: base.ref
+    headBranch: head.ref
+    headSha: head.sha
   args:
     state: all
   paging: { style: page, size: 100, maxPages: 10 }
+  compute:                           # the ChangeRequest contract; `r` is the record plus what project lifted
+    key: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4]) + '#' + toString(r.number)"
+    repositoryKey: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4])"
+    status: "CASE WHEN r.merged_at IS NOT NULL THEN 'merged' ELSE r.state END"
+    labels: "r.labelNames"
+    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR r.viaApp IS NOT NULL THEN 'bot' WHEN any(l IN split(coalesce(r.body, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) OR coalesce(r.body, '') CONTAINS 'Generated with [Claude Code]' THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
+    authorRole: "CASE r.author_association WHEN 'OWNER' THEN 'owner' WHEN 'MEMBER' THEN 'member' WHEN 'COLLABORATOR' THEN 'collaborator' WHEN 'CONTRIBUTOR' THEN 'contributor' WHEN 'FIRST_TIME_CONTRIBUTOR' THEN 'first-timer' WHEN 'FIRST_TIMER' THEN 'first-timer' WHEN 'NONE' THEN 'outsider' ELSE '' END"
+    openedAt: "r.created_at"
+    updatedAt: "r.updated_at"
+    mergedAt: "r.merged_at"
+    closedAt: "r.closed_at"
+    sourceUrl: "r.html_url"
+    owner: "split(r.html_url, '/')[3]"              # with repo and number, the key a per-issue fetch (comments, reviews, commits, files) is made under
+    repo: "split(r.html_url, '/')[4]"
+  orderedBy: [{ property: openedAt, descending: true }]      # pulls/list defaults to created desc: a capped read is the newest N opened
   cache:
     kind: ttl
     seconds: 300
@@ -136,6 +257,28 @@
       qualifier: "repo:{value}"
       valuePattern: '(?:github\.com/|repos/)?([\w.-]+/[\w.-]+?)(?:/|$)'
   paging: { style: page, size: 100, maxPages: 10 }
+  project:                           # lifts for the ChangeRequest contract (see the header)
+    authorLogin: user.login
+    authorType: user.type
+    viaApp: performed_via_github_app.slug
+    labelNames: "labels[*].name"
+    milestone: milestone.title
+    assigneeLogins: "assignees[*].login"
+    prMergedAt: pull_request.merged_at   # a search item carries the merge time here, not as merged_at
+  compute:                           # the ChangeRequest contract; `r` is the record plus what project lifted
+    key: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4]) + '#' + toString(r.number)"
+    repositoryKey: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4])"
+    status: "CASE WHEN r.prMergedAt IS NOT NULL THEN 'merged' ELSE r.state END"
+    labels: "r.labelNames"
+    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR r.viaApp IS NOT NULL THEN 'bot' WHEN any(l IN split(coalesce(r.body, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) OR coalesce(r.body, '') CONTAINS 'Generated with [Claude Code]' THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
+    authorRole: "CASE r.author_association WHEN 'OWNER' THEN 'owner' WHEN 'MEMBER' THEN 'member' WHEN 'COLLABORATOR' THEN 'collaborator' WHEN 'CONTRIBUTOR' THEN 'contributor' WHEN 'FIRST_TIME_CONTRIBUTOR' THEN 'first-timer' WHEN 'FIRST_TIMER' THEN 'first-timer' WHEN 'NONE' THEN 'outsider' ELSE '' END"
+    openedAt: "r.created_at"
+    updatedAt: "r.updated_at"
+    mergedAt: "r.prMergedAt"
+    closedAt: "r.closed_at"
+    sourceUrl: "r.html_url"
+    owner: "split(r.html_url, '/')[3]"              # with repo and number, the key a per-issue fetch (comments, reviews, commits, files) is made under
+    repo: "split(r.html_url, '/')[4]"
   cache:
     kind: ttl
     seconds: 300
@@ -157,6 +300,28 @@
       qualifier: "repo:{value}"
       valuePattern: '(?:github\.com/|repos/)?([\w.-]+/[\w.-]+?)(?:/|$)'
   paging: { style: page, size: 100, maxPages: 10 }
+  project:                           # lifts for the ChangeRequest contract (see the header)
+    authorLogin: user.login
+    authorType: user.type
+    viaApp: performed_via_github_app.slug
+    labelNames: "labels[*].name"
+    milestone: milestone.title
+    assigneeLogins: "assignees[*].login"
+    prMergedAt: pull_request.merged_at   # a search item carries the merge time here, not as merged_at
+  compute:                           # the ChangeRequest contract; `r` is the record plus what project lifted
+    key: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4]) + '#' + toString(r.number)"
+    repositoryKey: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4])"
+    status: "CASE WHEN r.prMergedAt IS NOT NULL THEN 'merged' ELSE r.state END"
+    labels: "r.labelNames"
+    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR r.viaApp IS NOT NULL THEN 'bot' WHEN any(l IN split(coalesce(r.body, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) OR coalesce(r.body, '') CONTAINS 'Generated with [Claude Code]' THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
+    authorRole: "CASE r.author_association WHEN 'OWNER' THEN 'owner' WHEN 'MEMBER' THEN 'member' WHEN 'COLLABORATOR' THEN 'collaborator' WHEN 'CONTRIBUTOR' THEN 'contributor' WHEN 'FIRST_TIME_CONTRIBUTOR' THEN 'first-timer' WHEN 'FIRST_TIMER' THEN 'first-timer' WHEN 'NONE' THEN 'outsider' ELSE '' END"
+    openedAt: "r.created_at"
+    updatedAt: "r.updated_at"
+    mergedAt: "r.prMergedAt"
+    closedAt: "r.closed_at"
+    sourceUrl: "r.html_url"
+    owner: "split(r.html_url, '/')[3]"              # with repo and number, the key a per-issue fetch (comments, reviews, commits, files) is made under
+    repo: "split(r.html_url, '/')[4]"
   cache:
     kind: ttl
     seconds: 300
@@ -188,3 +353,291 @@
   cache:
     kind: ttl
     seconds: 86400
+
+# ---------------------------------------------------------------------------------------------
+# COMMENTS, REVIEWS, COMMITS AND FILE CHANGES — the records behind "who writes what", under the
+# dev vocabulary's Comment, Review, Commit and FileChange (types/github.yml).
+#
+# Two doors to comments. The REPOSITORY door (commentsByRepo, reviewCommentsByRepo) reads every
+# comment in a repository newest first, one call per page, with a literal createdAt lower bound
+# pushed to GitHub as `since` — the door for "what share of comments this quarter were machines".
+# The SUBJECT door (commentsByIssue, reviewCommentsByPull) reads one issue's or one pull request's
+# comments, one call each — the door for "what was said on this PR". Narrow to the subjects first;
+# never converge the two on one comment (two fetchers on one node returns 0).
+#
+# A per-subject producer is keyed `owner/repo/number`, composed by the join from the issue's or
+# PR's own owner, repo and number (producerKeyFields), split here into the operation's path
+# parameters (keyArgs), and stamped back as subjectCallKey (echoKeyAs) so each record finds its
+# anchor. A commit's files are keyed `owner/repo/sha` the same way.
+#
+# ONE KEY FORM ON BOTH DOORS. A record a per-subject fetch returns is stamped subjectCallKey as the
+# engine composes producerKeyFields — owner, repo and number joined by U+001F — and that stamp lands
+# AFTER compute runs. The repository doors compute the same key in the same form, so a comment the
+# repository door materialized first still answers a later per-subject hop: with the two forms
+# differing, the per-subject join found nothing on those nodes and said nothing (seen live).
+#
+# Every block below carries the vocabulary's names: subjectKey is the Issue's or ChangeRequest's
+# `key` ('github.com/owner/repo#123') or the Commit's ('github.com/owner/repo@sha'), authorKind is
+# the rule in the header, and a commit is `assisted` when a Co-Authored-By trailer names an agent —
+# the common case for agent-written code committed under a person's name.
+
+- name: commentsByRepo
+  kind: remote
+  operation: issues/list-comments-for-repo   # GET /repos/{owner}/{repo}/issues/comments — conversation comments on issues AND pull requests
+  records: "$[*]"
+  keyArgs: [owner, repo]
+  keySplit: "/"
+  echoKeyAs: full_name
+  maxKeysPerCall: 1
+  args:
+    sort: created
+    direction: desc
+  paging: { style: page, size: 100, maxPages: 10 }
+  pushdown:                          # GitHub applies `since` itself; everything else is filtered after the read
+    - { property: createdAt, op: GREATER_THAN_OR_EQUAL, argPath: since, clause: "{value}" }
+  project:
+    authorLogin: user.login
+    authorType: user.type
+    viaApp: performed_via_github_app.slug
+  compute:                           # the Comment contract; `r` is the record plus what project lifted
+    repositoryKey: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4])"
+    subjectKey: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4]) + '#' + split(split(r.html_url, '/')[6], '#')[0]"
+    subjectKind: "CASE WHEN r.html_url CONTAINS '/pull/' THEN 'change-request' ELSE 'issue' END"
+    subjectCallKey: "split(r.html_url, '/')[3] + '\\u001f' + split(r.html_url, '/')[4] + '\\u001f' + split(split(r.html_url, '/')[6], '#')[0]"   # the form the engine stamps on a per-subject fetch (owner, repo, number joined by U+001F), so a comment reached by either door carries one key
+    kind: "'conversation'"
+    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR r.viaApp IS NOT NULL THEN 'bot' WHEN any(l IN split(coalesce(r.body, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) OR coalesce(r.body, '') CONTAINS 'Generated with [Claude Code]' THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
+    authorRole: "CASE r.author_association WHEN 'OWNER' THEN 'owner' WHEN 'MEMBER' THEN 'member' WHEN 'COLLABORATOR' THEN 'collaborator' WHEN 'CONTRIBUTOR' THEN 'contributor' WHEN 'FIRST_TIME_CONTRIBUTOR' THEN 'first-timer' WHEN 'FIRST_TIMER' THEN 'first-timer' WHEN 'NONE' THEN 'outsider' ELSE '' END"
+    createdAt: "r.created_at"
+    updatedAt: "r.updated_at"
+    sourceUrl: "r.html_url"
+  cost: { bucket: github-core, rate: 5000/hour }
+  orderedBy: [{ property: createdAt, descending: true }]      # sort=created, direction=desc above
+  cache: { kind: ttl, seconds: 600, negativeTtlSeconds: 600 }
+
+- name: reviewCommentsByRepo
+  kind: remote
+  operation: pulls/list-review-comments-for-repo   # GET /repos/{owner}/{repo}/pulls/comments — comments on lines of a diff
+  records: "$[*]"
+  keyArgs: [owner, repo]
+  keySplit: "/"
+  echoKeyAs: full_name
+  maxKeysPerCall: 1
+  args:
+    sort: created
+    direction: desc
+  paging: { style: page, size: 100, maxPages: 10 }
+  pushdown:
+    - { property: createdAt, op: GREATER_THAN_OR_EQUAL, argPath: since, clause: "{value}" }
+  project:
+    authorLogin: user.login
+    authorType: user.type
+    viaApp: performed_via_github_app.slug
+  compute:                           # the Comment contract; `r` is the record plus what project lifted
+    repositoryKey: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4])"
+    subjectKey: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4]) + '#' + split(split(r.html_url, '/')[6], '#')[0]"
+    subjectKind: "CASE WHEN r.html_url CONTAINS '/pull/' THEN 'change-request' ELSE 'issue' END"
+    subjectCallKey: "split(r.html_url, '/')[3] + '\\u001f' + split(r.html_url, '/')[4] + '\\u001f' + split(split(r.html_url, '/')[6], '#')[0]"   # the form the engine stamps on a per-subject fetch (owner, repo, number joined by U+001F), so a comment reached by either door carries one key
+    kind: "'review-line'"
+    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR r.viaApp IS NOT NULL THEN 'bot' WHEN any(l IN split(coalesce(r.body, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) OR coalesce(r.body, '') CONTAINS 'Generated with [Claude Code]' THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
+    authorRole: "CASE r.author_association WHEN 'OWNER' THEN 'owner' WHEN 'MEMBER' THEN 'member' WHEN 'COLLABORATOR' THEN 'collaborator' WHEN 'CONTRIBUTOR' THEN 'contributor' WHEN 'FIRST_TIME_CONTRIBUTOR' THEN 'first-timer' WHEN 'FIRST_TIMER' THEN 'first-timer' WHEN 'NONE' THEN 'outsider' ELSE '' END"
+    createdAt: "r.created_at"
+    updatedAt: "r.updated_at"
+    sourceUrl: "r.html_url"
+    line: "coalesce(r.line, r.original_line)"
+    inReplyTo: "CASE WHEN r.in_reply_to_id IS NULL THEN '' ELSE split(r.html_url, '#')[0] + '#discussion_r' + toString(r.in_reply_to_id) END"
+  cost: { bucket: github-core, rate: 5000/hour }
+  orderedBy: [{ property: createdAt, descending: true }]      # sort=created, direction=desc above
+  cache: { kind: ttl, seconds: 600, negativeTtlSeconds: 600 }
+
+- name: commentsByIssue
+  kind: remote
+  operation: issues/list-comments    # GET /repos/{owner}/{repo}/issues/{issue_number}/comments — one issue or PR's conversation
+  records: "$[*]"
+  keyArgs: [owner, repo, issue_number]
+  echoKeyAs: subjectCallKey
+  batchSafe: false
+  paging: { style: page, size: 100, maxPages: 3 }
+  project:
+    authorLogin: user.login
+    authorType: user.type
+    viaApp: performed_via_github_app.slug
+  compute:                           # the Comment contract; `r` is the record plus what project lifted
+    repositoryKey: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4])"
+    subjectKey: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4]) + '#' + split(split(r.html_url, '/')[6], '#')[0]"
+    subjectKind: "CASE WHEN r.html_url CONTAINS '/pull/' THEN 'change-request' ELSE 'issue' END"
+    subjectCallKey: "split(r.html_url, '/')[3] + '\\u001f' + split(r.html_url, '/')[4] + '\\u001f' + split(split(r.html_url, '/')[6], '#')[0]"   # the form the engine stamps on a per-subject fetch (owner, repo, number joined by U+001F), so a comment reached by either door carries one key
+    kind: "'conversation'"
+    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR r.viaApp IS NOT NULL THEN 'bot' WHEN any(l IN split(coalesce(r.body, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) OR coalesce(r.body, '') CONTAINS 'Generated with [Claude Code]' THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
+    authorRole: "CASE r.author_association WHEN 'OWNER' THEN 'owner' WHEN 'MEMBER' THEN 'member' WHEN 'COLLABORATOR' THEN 'collaborator' WHEN 'CONTRIBUTOR' THEN 'contributor' WHEN 'FIRST_TIME_CONTRIBUTOR' THEN 'first-timer' WHEN 'FIRST_TIMER' THEN 'first-timer' WHEN 'NONE' THEN 'outsider' ELSE '' END"
+    createdAt: "r.created_at"
+    updatedAt: "r.updated_at"
+    sourceUrl: "r.html_url"
+  cost: { bucket: github-core, rate: 5000/hour }
+  cache: { kind: ttl, seconds: 600, negativeTtlSeconds: 600 }
+
+- name: reviewCommentsByPull
+  kind: remote
+  operation: pulls/list-review-comments   # GET /repos/{owner}/{repo}/pulls/{pull_number}/comments
+  records: "$[*]"
+  keyArgs: [owner, repo, pull_number]
+  echoKeyAs: subjectCallKey
+  batchSafe: false
+  paging: { style: page, size: 100, maxPages: 3 }
+  project:
+    authorLogin: user.login
+    authorType: user.type
+    viaApp: performed_via_github_app.slug
+  compute:                           # the Comment contract; `r` is the record plus what project lifted
+    repositoryKey: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4])"
+    subjectKey: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4]) + '#' + split(split(r.html_url, '/')[6], '#')[0]"
+    subjectKind: "CASE WHEN r.html_url CONTAINS '/pull/' THEN 'change-request' ELSE 'issue' END"
+    subjectCallKey: "split(r.html_url, '/')[3] + '\\u001f' + split(r.html_url, '/')[4] + '\\u001f' + split(split(r.html_url, '/')[6], '#')[0]"   # the form the engine stamps on a per-subject fetch (owner, repo, number joined by U+001F), so a comment reached by either door carries one key
+    kind: "'review-line'"
+    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR r.viaApp IS NOT NULL THEN 'bot' WHEN any(l IN split(coalesce(r.body, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) OR coalesce(r.body, '') CONTAINS 'Generated with [Claude Code]' THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
+    authorRole: "CASE r.author_association WHEN 'OWNER' THEN 'owner' WHEN 'MEMBER' THEN 'member' WHEN 'COLLABORATOR' THEN 'collaborator' WHEN 'CONTRIBUTOR' THEN 'contributor' WHEN 'FIRST_TIME_CONTRIBUTOR' THEN 'first-timer' WHEN 'FIRST_TIMER' THEN 'first-timer' WHEN 'NONE' THEN 'outsider' ELSE '' END"
+    createdAt: "r.created_at"
+    updatedAt: "r.updated_at"
+    sourceUrl: "r.html_url"
+    line: "coalesce(r.line, r.original_line)"
+    inReplyTo: "CASE WHEN r.in_reply_to_id IS NULL THEN '' ELSE split(r.html_url, '#')[0] + '#discussion_r' + toString(r.in_reply_to_id) END"
+  cost: { bucket: github-core, rate: 5000/hour }
+  cache: { kind: ttl, seconds: 600, negativeTtlSeconds: 600 }
+
+- name: reviewsByPull
+  kind: remote
+  operation: pulls/list-reviews      # GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews — one call per PR; narrow the PRs first
+  records: "$[*]"
+  keyArgs: [owner, repo, pull_number]
+  echoKeyAs: subjectCallKey
+  batchSafe: false
+  paging: { style: page, size: 100, maxPages: 2 }
+  project:
+    authorLogin: user.login
+    authorType: user.type
+  compute:                           # the Review contract
+    repositoryKey: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4])"
+    subjectKey: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4]) + '#' + split(split(r.html_url, '/')[6], '#')[0]"
+    verdict: "CASE r.state WHEN 'APPROVED' THEN 'approved' WHEN 'CHANGES_REQUESTED' THEN 'changes-requested' WHEN 'COMMENTED' THEN 'commented' WHEN 'DISMISSED' THEN 'dismissed' WHEN 'PENDING' THEN 'pending' ELSE toLower(coalesce(r.state, '')) END"
+    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR r.viaApp IS NOT NULL THEN 'bot' WHEN any(l IN split(coalesce(r.body, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) OR coalesce(r.body, '') CONTAINS 'Generated with [Claude Code]' THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
+    authorRole: "CASE r.author_association WHEN 'OWNER' THEN 'owner' WHEN 'MEMBER' THEN 'member' WHEN 'COLLABORATOR' THEN 'collaborator' WHEN 'CONTRIBUTOR' THEN 'contributor' WHEN 'FIRST_TIME_CONTRIBUTOR' THEN 'first-timer' WHEN 'FIRST_TIMER' THEN 'first-timer' WHEN 'NONE' THEN 'outsider' ELSE '' END"
+    commitSha: "r.commit_id"
+    submittedAt: "r.submitted_at"
+    sourceUrl: "r.html_url"
+  cost: { bucket: github-core, rate: 5000/hour }
+  cache: { kind: ttl, seconds: 600, negativeTtlSeconds: 600 }
+
+- name: commitsByRepo
+  kind: remote
+  operation: repos/list-commits      # GET /repos/{owner}/{repo}/commits — newest first on the default branch; no stats or files here
+  records: "$[*]"
+  keyArgs: [owner, repo]
+  keySplit: "/"
+  echoKeyAs: full_name
+  maxKeysPerCall: 1
+  paging: { style: page, size: 100, maxPages: 10 }
+  pushdown:                          # GitHub applies since/until (on the author date) and author itself
+    - { property: authoredAt, op: GREATER_THAN_OR_EQUAL, argPath: since, clause: "{value}" }
+    - { property: authoredAt, op: LESS_THAN_OR_EQUAL, argPath: until, clause: "{value}" }
+    - { property: authorLogin, op: EQUALS, argPath: author, clause: "{value}" }
+  project:                           # the commit object's nested fields, lifted
+    message: commit.message
+    authorName: commit.author.name
+    authoredAt: commit.author.date
+    committedAt: commit.committer.date
+    authorLogin: author.login        # null when GitHub could not resolve the author's email to an account
+    authorType: author.type
+    committerLoginRaw: committer.login
+    verified: commit.verification.verified
+    parents: "parents[*].sha"
+  compute:                           # the Commit contract; `r` is the record plus what project lifted
+    repositoryKey: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4])"
+    key: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4]) + '@' + r.sha"
+    projectKey: "'https://github.com/' + split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4] + '@' + r.sha"
+    owner: "split(r.html_url, '/')[3]"
+    repo: "split(r.html_url, '/')[4]"
+    title: "split(coalesce(r.message, ''), '\\n')[0]"
+    coAuthors: "[l IN split(coalesce(r.message, ''), '\\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' | trim(substring(l, 15))]"
+    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR coalesce(r.authorLogin, '') ENDS WITH '[bot]' THEN 'bot' WHEN any(l IN split(coalesce(r.message, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
+    committerLogin: "CASE WHEN r.committerLoginRaw IS NULL OR r.committerLoginRaw = r.authorLogin THEN '' ELSE r.committerLoginRaw END"
+    isMerge: "size(coalesce(r.parents, [])) > 1"
+    isRevert: "coalesce(r.message, '') STARTS WITH 'Revert '"
+    revertsSha: "coalesce(head([l IN split(coalesce(r.message, ''), '\\n') WHERE l STARTS WITH 'This reverts commit ' | split(substring(l, 20), '.')[0]]), '')"
+    sourceUrl: "r.html_url"
+  cost: { bucket: github-core, rate: 5000/hour }
+  orderedBy: [{ property: committedAt, descending: true }]      # list-commits walks the branch newest commit first, by commit time
+  cache: { kind: ttl, seconds: 600, negativeTtlSeconds: 600 }
+
+- name: commitsByPull
+  kind: remote
+  operation: pulls/list-commits      # GET /repos/{owner}/{repo}/pulls/{pull_number}/commits — the commits a PR carries, oldest first
+  records: "$[*]"
+  keyArgs: [owner, repo, pull_number]
+  echoKeyAs: subjectCallKey
+  batchSafe: false
+  paging: { style: page, size: 100, maxPages: 3 }
+  project:                           # the commit object's nested fields, lifted
+    message: commit.message
+    authorName: commit.author.name
+    authoredAt: commit.author.date
+    committedAt: commit.committer.date
+    authorLogin: author.login        # null when GitHub could not resolve the author's email to an account
+    authorType: author.type
+    committerLoginRaw: committer.login
+    verified: commit.verification.verified
+    parents: "parents[*].sha"
+  compute:                           # the Commit contract; `r` is the record plus what project lifted
+    repositoryKey: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4])"
+    key: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4]) + '@' + r.sha"
+    projectKey: "'https://github.com/' + split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4] + '@' + r.sha"
+    owner: "split(r.html_url, '/')[3]"
+    repo: "split(r.html_url, '/')[4]"
+    title: "split(coalesce(r.message, ''), '\\n')[0]"
+    coAuthors: "[l IN split(coalesce(r.message, ''), '\\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' | trim(substring(l, 15))]"
+    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR coalesce(r.authorLogin, '') ENDS WITH '[bot]' THEN 'bot' WHEN any(l IN split(coalesce(r.message, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
+    committerLogin: "CASE WHEN r.committerLoginRaw IS NULL OR r.committerLoginRaw = r.authorLogin THEN '' ELSE r.committerLoginRaw END"
+    isMerge: "size(coalesce(r.parents, [])) > 1"
+    isRevert: "coalesce(r.message, '') STARTS WITH 'Revert '"
+    revertsSha: "coalesce(head([l IN split(coalesce(r.message, ''), '\\n') WHERE l STARTS WITH 'This reverts commit ' | split(substring(l, 20), '.')[0]]), '')"
+    sourceUrl: "r.html_url"
+  cost: { bucket: github-core, rate: 5000/hour }
+  cache: { kind: ttl, seconds: 600, negativeTtlSeconds: 600 }
+
+# A commit is immutable, so its files are cached a week. One call per commit: narrow the commits first.
+- name: filesByCommit
+  kind: remote
+  operation: repos/get-commit        # GET /repos/{owner}/{repo}/commits/{ref} — the files, each with its counts and patch
+  records: "$.files[*]"
+  keyArgs: [owner, repo, ref]
+  echoKeyAs: subjectCallKey
+  batchSafe: false
+  compute:                           # the FileChange contract; `r` is one diff entry plus the echoed subjectCallKey
+    repositoryKey: "'github.com/' + toLower(split(r.blob_url, '/')[3] + '/' + split(r.blob_url, '/')[4])"
+    subjectKey: "'github.com/' + toLower(split(r.blob_url, '/')[3] + '/' + split(r.blob_url, '/')[4]) + '@' + split(r.blob_url, '/')[6]"
+    subjectKind: "'commit'"
+    path: "r.filename"
+    previousPath: "coalesce(r.previous_filename, '')"
+    status: "CASE r.status WHEN 'changed' THEN 'modified' WHEN 'unchanged' THEN 'modified' ELSE r.status END"
+    changedLines: "[x IN [h IN split(coalesce(r.patch, ''), '\\n') WHERE h STARTS WITH '@@' | split(split(h, '+')[1], ' ')[0]] | CASE WHEN x CONTAINS ',' THEN split(x, ',')[0] + '-' + toString(toInteger(split(x, ',')[0]) + toInteger(split(x, ',')[1]) - 1) ELSE x + '-' + x END]"
+    sourceUrl: "r.blob_url"
+  cost: { bucket: github-core, rate: 5000/hour }
+  cache: { kind: ttl, seconds: 604800, negativeTtlSeconds: 3600 }
+
+- name: filesByPull
+  kind: remote
+  operation: pulls/list-files        # GET /repos/{owner}/{repo}/pulls/{pull_number}/files — the PR's whole diff, file by file, in one call
+  records: "$[*]"
+  keyArgs: [owner, repo, pull_number]
+  echoKeyAs: subjectCallKey
+  batchSafe: false
+  paging: { style: page, size: 100, maxPages: 3 }
+  compute:                           # the FileChange contract; `r` is one diff entry plus the echoed subjectCallKey
+    repositoryKey: "'github.com/' + toLower(split(r.blob_url, '/')[3] + '/' + split(r.blob_url, '/')[4])"
+    subjectKey: "'github.com/' + toLower(split(r.subjectCallKey, '\\u001f')[0] + '/' + split(r.subjectCallKey, '\\u001f')[1]) + '#' + split(r.subjectCallKey, '\\u001f')[2]"   # the composite key reaches compute joined by U+001F
+    subjectKind: "'change-request'"
+    path: "r.filename"
+    previousPath: "coalesce(r.previous_filename, '')"
+    status: "CASE r.status WHEN 'changed' THEN 'modified' WHEN 'unchanged' THEN 'modified' ELSE r.status END"
+    changedLines: "[x IN [h IN split(coalesce(r.patch, ''), '\\n') WHERE h STARTS WITH '@@' | split(split(h, '+')[1], ' ')[0]] | CASE WHEN x CONTAINS ',' THEN split(x, ',')[0] + '-' + toString(toInteger(split(x, ',')[0]) + toInteger(split(x, ',')[1]) - 1) ELSE x + '-' + x END]"
+    sourceUrl: "r.blob_url"
+  cost: { bucket: github-core, rate: 5000/hour }
+  cache: { kind: ttl, seconds: 600, negativeTtlSeconds: 600 }

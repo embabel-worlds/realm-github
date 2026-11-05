@@ -20,8 +20,15 @@
 - url: "api.github.com.json"
   name: gh
   type: openapi
-  auth: oauth2
-  oauth2:
+  # TEST-ONLY (this session): reads under the appliance's GH_TOKEN, as realm-github-actions does, so
+  # verification runs at GitHub's authenticated limit. The shipped declaration is OAuth (below); which
+  # one ships is an open decision recorded in the handover.
+  auth: bearer
+  token-env: GH_TOKEN
+  headers:
+    Accept: "application/vnd.github+json"
+    X-GitHub-Api-Version: "2022-11-28"
+  oauth2-disabled:
     auth-url: https://github.com/login/oauth/authorize
     token-url: https://github.com/login/oauth/access_token
     # Maximum reasonable scope — broad enough for any assistant tool,
@@ -51,6 +58,7 @@
     - issues/create
     - issues/update
     - issues/list-comments
+    - issues/list-comments-for-repo
     - issues/create-comment
     # Verb write-backs on a materialized GitHubIssue (src/api/issue.ts):
     # add-labels / add-assignees are additive (idempotent per label/assignee),
@@ -65,6 +73,7 @@
     - pulls/list-commits
     - pulls/list-reviews
     - pulls/list-review-comments
+    - pulls/list-review-comments-for-repo
     - pulls/merge
     # Verb write-back on a materialized GitHubPullRequest (src/api/pull-request.ts).
     # (close/reopen/comment/addLabels/assign reuse the issues/* ops above — a PR
@@ -75,6 +84,7 @@
     - repos/list-for-user
     - repos/list-for-authenticated-user
     - repos/list-commits
+    - repos/get-commit
     - repos/list-branches
     - repos/list-tags
     - repos/list-contributors

@@ -1,0 +1,225 @@
+# The answer surface over the dev vocabulary: one view per question the realm now exists to
+# answer — who writes what, and whether it was a person, a bot, a coding agent or a person with
+# an agent's help. Every view pins the repository from its `repo` parameter, filters on PROJECTED
+# variables so the fetch stays one cache key per repository, and limits a terminal result by
+# collect + list slice rather than LIMIT (the rules realm-github-actions/views/actions.yml
+# explains). NO TOP-N BEFORE A HOP: the repository doors are capped at 1,000, and a ranked
+# LIMIT over a capped read is provable only as the query's LAST clause and only on the node's own
+# property in the producer's declared `orderedBy:` (then the page walk stops at N, one call). A
+# ranked LIMIT followed by a hop, or preceded by a graph-side filter, is refused as unprovable
+# (embabel/me, filed from this realm). So the views that hop — reviews, files — take a `since`
+# window that GitHub applies itself (list-for-repo's and list-commits' `since`), which both
+# completes the fetch and bounds the hop's anchors. Every view's description repeats the vocabulary's honest limit: a person who pasted
+# an agent's text with no trailer and no marker counts as human.
+#
+# THE DOORS. Comments and commits are read newest first through the repository door, up to
+# 1,000 each (10 pages), with `since` pushed to GitHub when a literal lower bound is given; a
+# window further back than the newest 1,000 is reported PARTIAL. Reviews, a PR's line comments
+# and a commit's files are one call per subject, so the views that hop to them bound the
+# subjects first with ORDER BY … LIMIT $n directly before the hop.
+
+- name: GitHubAuthorship
+  description: >-
+    SELECT THIS for "what share of the work in owner/repo is machine-generated", "how many
+    pull requests / issues / comments / commits were written by bots, by coding agents, by
+    people with an agent's help", "human versus machine in owner/repo". One row per record kind
+    (issue, change-request, comment, commit) and authorKind, with the count and its share of
+    that kind. Each kind is read newest first up to 1,000 records; the `since` bound narrows
+    comments and commits at GitHub. A person who pasted an agent's text with no trailer and no
+    marker counts as human here.
+  params:
+    repo:  { type: string, default: "embabel/embabel-agent", description: "Repository as owner/repo." }
+    since: { type: string, default: "1970-01-01T00:00:00Z", description: "ISO-8601 lower bound on when each record was written; pushed to GitHub for comments and commits." }
+  cypher: |
+    MATCH (r:GitHubRepository {full_name: $repo})
+    CALL {
+      WITH r
+      MATCH (r)-[:HAS_ISSUE]->(i:Issue)
+      WITH i, i.openedAt AS openedAt, i.isChangeRequest AS isPr, i.authorKind AS ik
+      WHERE openedAt >= $since
+      RETURN CASE WHEN isPr THEN 'change-request' ELSE 'issue' END AS recordKind, ik AS authorKind
+      UNION ALL
+      WITH r
+      MATCH (r)-[:HAS_COMMENT]->(c:Comment)
+      WITH c, c.createdAt AS createdAt, c.authorKind AS ck
+      WHERE createdAt >= $since
+      RETURN 'comment' AS recordKind, ck AS authorKind
+      UNION ALL
+      WITH r
+      MATCH (r)-[:HAS_COMMIT]->(m:Commit)
+      WITH m, m.authoredAt AS authoredAt, m.authorKind AS mk
+      WHERE authoredAt >= $since
+      RETURN 'commit' AS recordKind, mk AS authorKind
+    }
+    WITH recordKind, authorKind, count(*) AS n
+    WITH recordKind, collect({authorKind: authorKind, n: n}) AS byKind, sum(n) AS total
+    UNWIND byKind AS b
+    RETURN recordKind, b.authorKind AS authorKind, b.n AS n,
+           round(100.0 * b.n / total, 1) AS pct
+    ORDER BY recordKind, n DESC
+
+- name: GitHubChangeRequestsByAuthorKind
+  description: >-
+    SELECT THIS for "pull requests opened by coding agents versus people in owner/repo, by
+    month", "how do agent-opened PRs end — merged or closed", "agent PR merge rate", "are
+    assisted PRs merged faster". One row per month, authorKind and outcome (open, merged,
+    closed), with the count and the mean hours from opening to merge for the merged ones.
+    Newest 1,000 pull requests. Assisted means a person's PR whose description declares an
+    agent generated it; a PR an agent wrote with no marker counts as human.
+  params:
+    repo:  { type: string, default: "embabel/embabel-agent", description: "Repository as owner/repo." }
+    since: { type: string, default: "1970-01-01T00:00:00Z", description: "ISO-8601 lower bound on openedAt." }
+  cypher: |
+    MATCH (:GitHubRepository {full_name: $repo})-[:HAS_PULL_REQUEST]->(pr:ChangeRequest)
+    WITH pr, pr.openedAt AS openedAt, pr.mergedAt AS mergedAt, pr.status AS status, pr.authorKind AS authorKind
+    WHERE openedAt >= $since
+    WITH substring(openedAt, 0, 7) AS month, authorKind, status, count(pr) AS n,
+         avg(CASE WHEN mergedAt IS NULL THEN null
+                  ELSE duration.inSeconds(datetime(openedAt), datetime(mergedAt)).seconds / 3600.0 END) AS meanHoursToMerge
+    RETURN month, authorKind, status, n,
+           CASE WHEN meanHoursToMerge IS NULL THEN null ELSE round(meanHoursToMerge, 1) END AS meanHoursToMerge
+    ORDER BY month, authorKind, status
+
+- name: GitHubReviewBurden
+  description: >-
+    SELECT THIS for "do agent-written pull requests draw more review than human ones in
+    owner/repo", "how many human review comments does an assisted PR get", "review burden by
+    author kind", "who reviews the agents' work". For the pull requests merged and last
+    touched since a date: one row per PR authorKind, with PRs, the mean number of review-line
+    comments per PR, how many of those comments came from people, the mean number of reviews
+    per PR, and how many PRs had changes requested. GitHub narrows the read to `since` itself;
+    then one call per PR for its reviews and one for its line comments, so keep the window to
+    what a hundred PRs cover. Assisted means a person's PR whose description declares an agent
+    generated it; a PR an agent wrote with no marker counts as human.
+  params:
+    repo:  { type: string, default: "embabel/embabel-agent", description: "Repository as owner/repo." }
+    since: { type: string, default: "2026-10-01T00:00:00Z", description: "ISO-8601 lower bound on when the PR was last updated, pushed to GitHub. Keep it to a window of at most a hundred merged PRs." }
+  cypher: |
+    MATCH (:GitHubRepository {full_name: $repo})-[:HAS_ISSUE]->(pr:Issue)
+    WHERE pr.updatedAt >= $since
+    WITH pr, pr.isChangeRequest AS isPr, pr.mergedAt AS mergedAt, pr.authorKind AS authorKind
+    WHERE isPr = true AND mergedAt IS NOT NULL
+    OPTIONAL MATCH (pr)-[:HAS_REVIEW]->(rv:Review)
+    WITH pr, authorKind, collect(rv.verdict) AS verdicts
+    OPTIONAL MATCH (pr)-[:HAS_REVIEW_COMMENT]->(c:Comment)
+    WITH pr, authorKind, verdicts, collect(c.authorKind) AS commentKinds
+    WITH authorKind, count(pr) AS prs,
+         sum(size(commentKinds)) AS lineCommentsTotal,
+         sum(size([k IN commentKinds WHERE k = 'human'])) AS humanLineComments,
+         sum(size(verdicts)) AS reviewsTotal,
+         sum(CASE WHEN 'changes-requested' IN verdicts THEN 1 ELSE 0 END) AS prsWithChangesRequested
+    RETURN authorKind, prs,
+           round(1.0 * lineCommentsTotal / prs, 2) AS lineCommentsPerPr,
+           humanLineComments,
+           round(1.0 * reviewsTotal / prs, 2) AS reviewsPerPr,
+           prsWithChangesRequested
+    ORDER BY prs DESC
+
+- name: GitHubCommitSize
+  description: >-
+    SELECT THIS for "how big are the agents' commits compared with people's in owner/repo",
+    "lines and files per commit by author kind", "do assisted commits touch more files", "do
+    the agents ship tests". For the non-merge commits on the default branch authored since a
+    date: one row per authorKind with commits, mean and largest files changed, mean and
+    largest lines changed (additions plus deletions), and how many touched a test file.
+    GitHub narrows the read to `since` itself; then one call per commit for its files (cached a
+    week), so keep the window to what a hundred commits cover.
+  params:
+    repo:  { type: string, default: "embabel/embabel-agent", description: "Repository as owner/repo." }
+    since: { type: string, default: "2026-10-01T00:00:00Z", description: "ISO-8601 lower bound on the author date, pushed to GitHub. Keep it to a window of at most a hundred commits." }
+  cypher: |
+    MATCH (:GitHubRepository {full_name: $repo})-[:HAS_COMMIT]->(c:Commit)
+    WHERE c.authoredAt >= $since
+    WITH c, c.isMerge AS isMerge, c.authorKind AS authorKind
+    WHERE isMerge = false
+    MATCH (c)-[:CHANGED]->(f:FileChange)
+    WITH c, authorKind, count(f) AS files, sum(f.additions + f.deletions) AS lines,
+         sum(CASE WHEN f.path CONTAINS '/test/' OR f.path CONTAINS '/tests/' OR f.path CONTAINS '__tests__' OR f.path ENDS WITH '.test.ts' OR f.path ENDS WITH 'Test.kt' OR f.path ENDS WITH 'Test.java' OR f.path ENDS WITH '.spec.js' THEN 1 ELSE 0 END) AS testFiles
+    WITH authorKind, count(c) AS commits,
+         avg(files) AS meanFiles, max(files) AS maxFiles,
+         avg(lines) AS meanLines, max(lines) AS maxLines,
+         sum(CASE WHEN testFiles > 0 THEN 1 ELSE 0 END) AS commitsTouchingTests
+    RETURN authorKind, commits, round(meanFiles, 1) AS meanFiles, maxFiles, round(meanLines, 1) AS meanLines, maxLines, commitsTouchingTests
+    ORDER BY commits DESC
+
+- name: GitHubFileHotspots
+  description: >-
+    SELECT THIS for "which files change most in owner/repo", "hotspots", "the files the
+    agents keep touching", "what changed since a date". For the non-merge commits authored
+    since a date: one row per file path with how many commits touched it, lines changed, and
+    how many of those commits were by people, by agents (assisted or agent) and by bots.
+    GitHub narrows the read to `since` itself; then one call per commit (cached a week), so
+    keep the window to what a hundred commits cover.
+  params:
+    repo:  { type: string, default: "embabel/embabel-agent", description: "Repository as owner/repo." }
+    since: { type: string, default: "2026-10-01T00:00:00Z", description: "ISO-8601 lower bound on the author date, pushed to GitHub." }
+    limit: { type: int, default: 25, description: "How many paths to return." }
+  cypher: |
+    MATCH (:GitHubRepository {full_name: $repo})-[:HAS_COMMIT]->(c:Commit)
+    WHERE c.authoredAt >= $since
+    WITH c, c.isMerge AS isMerge
+    WHERE isMerge = false
+    MATCH (c)-[:CHANGED]->(f:FileChange)
+    WITH f.path AS path, count(DISTINCT c) AS commits, sum(f.additions + f.deletions) AS lines,
+         sum(CASE WHEN c.authorKind = 'human' THEN 1 ELSE 0 END) AS byHumans,
+         sum(CASE WHEN c.authorKind IN ['assisted', 'agent'] THEN 1 ELSE 0 END) AS byAgents,
+         sum(CASE WHEN c.authorKind = 'bot' THEN 1 ELSE 0 END) AS byBots
+    ORDER BY commits DESC, lines DESC
+    WITH collect({path: path, commits: commits, lines: lines, byHumans: byHumans, byAgents: byAgents, byBots: byBots}) AS rows
+    UNWIND rows[0..$limit] AS row
+    RETURN row.path AS path, row.commits AS commits, row.lines AS lines, row.byHumans AS byHumans, row.byAgents AS byAgents, row.byBots AS byBots
+
+# JUDGED, NOT DECLARED. authorKind reports what the record declares — the account's type, a
+# trailer, a marker. The two views below ask a model what the TEXT reads as, which is the only way
+# to see the vocabulary's honest limit: a person who pasted an agent's prose with no marker is
+# `human` to authorKind and, often, `machine` to a reader. The judgment is a model's opinion,
+# non-deterministic, and one batched call per view (§7.5 of the Virtual Cypher spec): keep the
+# window small. Every row keeps both values; nothing is overwritten.
+
+- name: GitHubCommentReadsAs
+  description: >-
+    SELECT THIS for "does this comment read as written by a person or a machine", "which
+    comments in owner/repo look AI-generated", "comments whose author is a person but whose
+    text reads as machine-written". For the conversation comments written since a date: one row
+    per comment with the declared authorKind (what the record says: human, bot, agent,
+    assisted), the judged label (what a model says the text reads as: human, machine or unsure),
+    whether the two agree, the author, where it was said and the opening words. One batched
+    model call over the window; keep `since` to a window of a few hundred comments at most. The
+    judged label is an opinion, not a fact: the declared authorKind is the fact.
+  params:
+    repo:  { type: string, default: "embabel/embabel-agent", description: "Repository as owner/repo." }
+    since: { type: string, default: "2026-10-25T00:00:00Z", description: "ISO-8601 lower bound on createdAt, pushed to GitHub. Keep the window small: every comment in it is judged." }
+    only:  { type: string, default: "", description: "Leave empty for every comment, or 'disagree' for only the comments whose judged label contradicts the declared kind." }
+  cypher: |
+    MATCH (:GitHubRepository {full_name: $repo})-[:HAS_COMMENT]->(c:Comment)
+    WHERE c.createdAt >= $since
+    WITH c, c.authorKind AS declared, c.authorLogin AS author, c.subjectKey AS on, c.createdAt AS at, c.sourceUrl AS url,
+         ai.classify(c, 'Does the comment TEXT read as written by a person or generated by a machine? machine: templated or tool output (quality-gate reports, dependency bumps, CI or coverage summaries, badges) or model-generated prose (uniform structure, exhaustive bullet lists, bold labels and headers, hedged summary sentences, no situated first-person detail). human: conversational, situated, terse, idiosyncratic, or clearly reacting to something specific. unsure: too short or too generic to tell. Answer one of: human, machine, unsure') AS judged
+    WITH c, declared, judged, author, on, at, url,
+         CASE WHEN judged = 'unsure' THEN 'unsure'
+              WHEN (declared = 'human' AND judged = 'human') OR (declared <> 'human' AND judged = 'machine') THEN 'agree'
+              ELSE 'disagree' END AS agreement
+    WHERE $only = '' OR agreement = $only
+    RETURN declared, judged, agreement, author, on, at, left(c.body, 90) AS opening, url
+    ORDER BY agreement, at DESC
+
+- name: GitHubCommentProvenance
+  description: >-
+    SELECT THIS for "how much of what reads as machine-written in owner/repo is declared as
+    such", "how good is the declared authorKind", "how many human-attributed comments look
+    AI-generated". For the conversation comments written since a date: one row per declared
+    authorKind and judged label with the count — the agreement matrix between what the records
+    declare and what a model says the text reads as. The off-diagonal cell declared=human,
+    judged=machine is the vocabulary's honest limit made visible: agent text posted under a
+    person's account with no marker. One batched model call over the window; keep `since`
+    to a window of a few hundred comments at most.
+  params:
+    repo:  { type: string, default: "embabel/embabel-agent", description: "Repository as owner/repo." }
+    since: { type: string, default: "2026-10-25T00:00:00Z", description: "ISO-8601 lower bound on createdAt, pushed to GitHub." }
+  cypher: |
+    MATCH (:GitHubRepository {full_name: $repo})-[:HAS_COMMENT]->(c:Comment)
+    WHERE c.createdAt >= $since
+    WITH c.authorKind AS declared,
+         ai.classify(c, 'Does the comment TEXT read as written by a person or generated by a machine? machine: templated or tool output (quality-gate reports, dependency bumps, CI or coverage summaries, badges) or model-generated prose (uniform structure, exhaustive bullet lists, bold labels and headers, hedged summary sentences, no situated first-person detail). human: conversational, situated, terse, idiosyncratic, or clearly reacting to something specific. unsure: too short or too generic to tell. Answer one of: human, machine, unsure') AS judged
+    WITH declared, judged, count(*) AS n
+    RETURN declared, judged, n ORDER BY declared, judged
