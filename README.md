@@ -148,35 +148,33 @@ can exceed its openings, because they are different PRs.
 
 ```sh
 # the last complete ISO week, one row per author kind and one for all
-view_run GitHubChangeRequestThroughput {"repo":"embabel/me","period":"week","since":"2026-10-26T00:00:00Z","until":"2026-11-02T00:00:00Z"}
+view_run GitHubChangeRequestThroughput {"repo":"embabel/embabel-agent","period":"week","since":"2026-10-26T00:00:00Z","until":"2026-11-02T00:00:00Z"}
 ```
 
-Two of Embabel's own repositories, one open source and one not, for the year to 7 November 2026
-(every cell reconciled against GitHub's API by `tests/verify.sh`):
+`embabel/embabel-agent` for the year to 7 November 2026, every cell reconciled against GitHub's
+API by `tests/verify.sh`:
 
-| | PRs opened | merged | closed unmerged | merge rate | mean hours to merge | opened by people | assisted |
-|---|---|---|---|---|---|---|---|
-| `embabel/embabel-agent` | 619 | 509 | 74 | 87.3% | 70.6 | 590 (95%) | 25 (4%) |
-| `embabel/me` | 2,166 | 1,947 | 170 | 92.0% | 10.2 | 605 (28%) | 1,560 (72%) |
+| PRs opened | merged | closed unmerged | merge rate | mean hours to merge | opened by people | assisted |
+|---|---|---|---|---|---|---|
+| 619 | 509 | 74 | 87.3% | 70.6 | 590 (95%) | 25 (4%) |
 
-In `embabel/me` the assisted PRs merge at 96.8% in a mean of 6.9 hours, against 79.0% and 19.5
-hours for the ones people opened without a marker; in `embabel/embabel-agent` the 25 assisted PRs
-merged at 82.6%. Neither
-repository labels pull requests by author, so the split comes from the account and the PR
-description as the vocabulary defines it, not from a label.
+The 25 assisted PRs merged at 82.6%. The repository labels no pull request by author, so the split
+comes from the account and the PR description as the vocabulary defines it, not from a label; a
+repository where machines write most of the code reads very differently on the same view, and the
+view is the same.
 
 ### The app: Ship rate
 
 `apps/ship-rate.html`, served at `/apps/github/ship-rate.html`, is that view as a page: any
-repositories side by side (the two above by default; add one as `owner/repo`), a Week · Month ·
+repositories side by side (`embabel/embabel-agent` by default; add one as `owner/repo`), a Week · Month ·
 Quarter · Year control, four tiles for the latest complete period (opened, merged, merge rate,
 machine share, each with its change on the period before), a stacked bar per period of who opened
 what, the merge rate per period as a line, and every number as a table. The current period is
 drawn as "so far". An incomplete read is flagged on its card as lower bounds; an empty window and a
 failed view are two different messages. Its "How it works" link shows the data, the exact Cypher,
 and what an empty card means. The first load of a window is the slow one: GitHub is read a page of
-100 at a time (3 s for `embabel/embabel-agent`'s twelve weeks, 33 s for a year of `embabel/me`),
-and the door caches the read for five minutes.
+100 at a time (3 s for `embabel/embabel-agent`'s twelve weeks, half a minute for a year of a
+repository that touches a few thousand issues), and the door caches the read for five minutes.
 
 ### Verify before anyone asks it anything
 

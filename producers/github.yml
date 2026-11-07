@@ -178,8 +178,8 @@
     # One query must not bound BOTH updatedAt and openedAt: two values would compete for one `since`.
     - { property: openedAt, op: GREATER_THAN_OR_EQUAL, argPath: since, clause: "{value}", valuePattern: '(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)' }
   # 40 pages, not the 10 the other doors take: this is the door the time-boxed views read, and a
-  # quarter or a year of an active repository is more than 1,000 records (embabel/me touched 3,578
-  # issues in the ten months to November 2026). The read stays bounded; `since` keeps it short.
+  # quarter or a year of an active repository is more than 1,000 records (a busy private repository
+  # touched several thousand in the ten months to November 2026). The read stays bounded; `since` keeps it short.
   paging: { style: page, size: 100, maxPages: 40 }
   compute:                           # the Issue contract; `r` is the record plus what project lifted
     key: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4]) + '#' + toString(r.number)"

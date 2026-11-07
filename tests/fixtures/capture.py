@@ -8,7 +8,7 @@ import json, os, sys, datetime, urllib.request, time
 BASE = os.environ.get('APPLIANCE', 'http://127.0.0.1:11043')
 AUTH = os.environ.get('EMBABEL_AUTH') or ('Bearer ' + os.environ['EMBABEL_TOKEN'] if os.environ.get('EMBABEL_TOKEN') else sys.exit('set EMBABEL_TOKEN or EMBABEL_AUTH'))
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPOS = ['embabel/embabel-agent', 'embabel/me']
+REPOS = ['embabel/embabel-agent', 'embabel/embabel-agent-examples']   # two public repositories; the page's default is the first
 N = {'week': 12, 'month': 12, 'quarter': 6, 'year': 1}          # the page's PERIODS[*].n
 now = datetime.datetime.now(datetime.timezone.utc)
 def start(period, d):

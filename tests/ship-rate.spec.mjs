@@ -17,7 +17,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 const fixtures = JSON.parse(readFileSync(join(here, "fixtures/envelopes.json"), "utf8"));
 const capturedAt = new Date(JSON.parse(readFileSync(join(here, "fixtures/captured-at.json"), "utf8")).capturedAt);
 const VIEW = "GitHubChangeRequestThroughput";
-const REPOS = ["embabel/embabel-agent", "embabel/me"];
+const REPOS = ["embabel/embabel-agent", "embabel/embabel-agent-examples"];   // the page defaults to the first; the second comes in on the hash
+const TWO = "#period=week&repos=" + REPOS.join(",");
 const N = { week: 12, month: 12, quarter: 6, year: 1 };
 
 /* The same UTC arithmetic the page does, so the spec can name the fixture a click will ask for. */
@@ -80,7 +81,7 @@ async function open(page, { overrides, delays, hash = "" } = {}) {
 const settled = (page, repo) => expect(page.locator(cardId(repo) + " [data-state='loading']")).toHaveCount(0);
 
 test("renders both repositories, every tile from the latest complete week, 13 buckets, no console errors", async ({ page }) => {
-  const errors = await open(page);
+  const errors = await open(page, { hash: TWO });
   for (const repo of REPOS) await settled(page, repo);
   await expect(page.locator(".card[data-repo]")).toHaveCount(2);
   const lk = latestComplete("week");
@@ -103,7 +104,7 @@ test("renders both repositories, every tile from the latest complete week, 13 bu
 });
 
 test("the badge is visible, non-empty and links out", async ({ page }) => {
-  await open(page);
+  await open(page, { hash: TWO });
   const badge = page.locator("#embabel-badge");
   await expect(badge).toBeVisible();
   await expect(badge).toContainText("Embabel");
@@ -116,7 +117,7 @@ test("the badge is visible, non-empty and links out", async ({ page }) => {
 });
 
 test("switching the time box asks the view for that period's window and redraws", async ({ page }) => {
-  const errors = await open(page);
+  const errors = await open(page, { hash: TWO });
   for (const repo of REPOS) await settled(page, repo);
   for (const period of ["month", "quarter", "year"]) {
     await page.locator(`#period-seg button[data-period='${period}']`).click();
@@ -149,22 +150,22 @@ test("a repository with no pull requests in the window says so, loudly, and a fa
 });
 
 test("an incomplete read is flagged on the card as lower bounds", async ({ page }) => {
-  const env = JSON.parse(JSON.stringify(envOf("embabel/me", "week")));
+  const env = JSON.parse(JSON.stringify(envOf("embabel/embabel-agent-examples", "week")));
   env.warnings = ["PARTIAL_RESULT: producer 'issuesByRepo' results truncated at 4000"];
-  const errors = await open(page, { overrides: { [key(argsFor("embabel/me", "week"))]: env } });
+  const errors = await open(page, { overrides: { [key(argsFor("embabel/embabel-agent-examples", "week"))]: env }, hash: TWO });
   for (const repo of REPOS) await settled(page, repo);
-  await expect(page.locator(cardId("embabel/me") + " [data-warnings='partial']")).toContainText("lower bound");
+  await expect(page.locator(cardId("embabel/embabel-agent-examples") + " [data-warnings='partial']")).toContainText("lower bound");
   await expect(page.locator(cardId("embabel/embabel-agent") + " [data-warnings]")).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
 test("adding a repository validates, refuses a duplicate, and a name the world cannot read fails loudly", async ({ page }) => {
-  const errors = await open(page);
+  const errors = await open(page, { hash: TWO });
   for (const repo of REPOS) await settled(page, repo);
   await page.fill("#add-input", "not-a-repo");
   await page.click("#add-btn");
   await expect(page.locator("#add-err")).toContainText("owner/repo");
-  await page.fill("#add-input", "Embabel/ME");
+  await page.fill("#add-input", "Embabel/EMBABEL-agent-examples");
   await page.click("#add-btn");
   await expect(page.locator("#add-err")).toContainText("already on the page");
   await expect(page.locator(".card[data-repo]")).toHaveCount(2);
@@ -176,7 +177,7 @@ test("adding a repository validates, refuses a duplicate, and a name the world c
   await expect(page.locator(".card[data-repo]")).toHaveCount(3);
   await page.click("[data-remove='acme/widgets']");
   await expect(page.locator(".card[data-repo]")).toHaveCount(2);
-  await page.click("[data-remove='embabel/me']");
+  await page.click("[data-remove='embabel/embabel-agent-examples']");
   await page.click("[data-remove='embabel/embabel-agent']");
   await expect(page.locator("#add-err")).toContainText("at least one");
   await expect(page.locator(".card[data-repo]")).toHaveCount(1);
@@ -184,23 +185,23 @@ test("adding a repository validates, refuses a duplicate, and a name the world c
 });
 
 test("a control answers at once while a slow call is in flight, and the slow result never paints over the newer choice", async ({ page }) => {
-  const slowKey = key(argsFor("embabel/me", "week"));
-  const errors = await open(page, { delays: { [slowKey]: 700 } });
+  const slowKey = key(argsFor("embabel/embabel-agent-examples", "week"));
+  const errors = await open(page, { delays: { [slowKey]: 700 }, hash: TWO });
   await settled(page, "embabel/embabel-agent");
-  await expect(page.locator(cardId("embabel/me") + " [data-state='loading']")).toHaveCount(1);
+  await expect(page.locator(cardId("embabel/embabel-agent-examples") + " [data-state='loading']")).toHaveCount(1);
   await page.locator("#period-seg button[data-period='quarter']").click();
   await expect(page.locator("#period-seg button[data-period='quarter']")).toHaveAttribute("aria-pressed", "true");
   await page.clock.runFor(1000);
   for (const repo of REPOS) await settled(page, repo);
-  await expect(page.locator(cardId("embabel/me") + " .meta")).toContainText("Latest complete quarter");
-  await expect(page.locator(cardId("embabel/me") + " [data-chart='volume'] g[data-bucket]")).toHaveCount(N.quarter + 1);
+  await expect(page.locator(cardId("embabel/embabel-agent-examples") + " .meta")).toContainText("Latest complete quarter");
+  await expect(page.locator(cardId("embabel/embabel-agent-examples") + " [data-chart='volume'] g[data-bucket]")).toHaveCount(N.quarter + 1);
   expect(errors).toEqual([]);
 });
 
 test("hovering a bucket shows its breakdown, and How it works opens in-page with the query that runs", async ({ page }) => {
-  const errors = await open(page);
+  const errors = await open(page, { hash: TWO });
   for (const repo of REPOS) await settled(page, repo);
-  await page.locator(cardId("embabel/me") + " [data-hit='volume']").first().hover();
+  await page.locator(cardId("embabel/embabel-agent-examples") + " [data-hit='volume']").first().hover();
   await expect(page.locator("#tip")).toBeVisible();
   await expect(page.locator("#tip")).toContainText("Opened");
   await page.click("footer a[href='#how-it-works']");

@@ -186,8 +186,8 @@
     <dt>bot</dt><dd>any other bot account, or a record performed through a GitHub App (Dependabot, release bots).</dd>
   </dl>
   <p>A pull request an agent wrote with no marker counts as human: the realm reports what the record declares and
-    does not guess. Neither <code>embabel/embabel-agent</code> nor <code>embabel/me</code> labels pull requests by
-    author, so labels play no part here; if a repository adopted such a label the producer's rule, not this page,
+    does not guess. <code>embabel/embabel-agent</code> labels no pull request by author, so labels play no part
+    here; if a repository adopted such a label the producer's rule, not this page,
     is where it would be read.</p>
 
   <h3>2. The questions</h3>
@@ -267,7 +267,7 @@ ORDER BY period, authorKind</pre>
    as strings. Every load has a generation number: a result from a superseded load is dropped, so a
    slow card never paints over a newer selection. */
 const VIEW = 'GitHubChangeRequestThroughput';
-const DEFAULT_REPOS = ['embabel/embabel-agent', 'embabel/me'];
+const DEFAULT_REPOS = ['embabel/embabel-agent'];
 const KINDS = ['human', 'assisted', 'agent', 'bot'];           // fixed series order; colour follows the kind, never the rank
 const KIND_LABEL = { human: 'People', assisted: 'Assisted', agent: 'Agents', bot: 'Bots' };
 const PERIODS = {
