@@ -71,7 +71,7 @@
     resolution: "CASE r.state_reason WHEN 'completed' THEN 'completed' WHEN 'not_planned' THEN 'not-planned' WHEN 'duplicate' THEN 'duplicate' ELSE '' END"
     kind: "CASE WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'bug') THEN 'bug' WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'enhancement' OR toLower(l) CONTAINS 'feature') THEN 'feature' WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'question') THEN 'question' WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'doc') THEN 'documentation' WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'task' OR toLower(l) CONTAINS 'chore') THEN 'task' ELSE '' END"
     labels: "r.labelNames"
-    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR r.viaApp IS NOT NULL THEN 'bot' WHEN any(l IN split(coalesce(r.body, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) OR coalesce(r.body, '') CONTAINS 'Generated with [Claude Code]' THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
+    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR r.viaApp IS NOT NULL THEN 'bot' WHEN any(l IN split(coalesce(r.body, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) OR coalesce(r.body, '') CONTAINS 'Generated with [Claude Code]' THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
     authorRole: "CASE r.author_association WHEN 'OWNER' THEN 'owner' WHEN 'MEMBER' THEN 'member' WHEN 'COLLABORATOR' THEN 'collaborator' WHEN 'CONTRIBUTOR' THEN 'contributor' WHEN 'FIRST_TIME_CONTRIBUTOR' THEN 'first-timer' WHEN 'FIRST_TIMER' THEN 'first-timer' WHEN 'NONE' THEN 'outsider' ELSE '' END"
     isChangeRequest: "r.prUrl IS NOT NULL"
     mergedAt: "r.prMergedAt"
@@ -120,7 +120,7 @@
     resolution: "CASE r.state_reason WHEN 'completed' THEN 'completed' WHEN 'not_planned' THEN 'not-planned' WHEN 'duplicate' THEN 'duplicate' ELSE '' END"
     kind: "CASE WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'bug') THEN 'bug' WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'enhancement' OR toLower(l) CONTAINS 'feature') THEN 'feature' WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'question') THEN 'question' WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'doc') THEN 'documentation' WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'task' OR toLower(l) CONTAINS 'chore') THEN 'task' ELSE '' END"
     labels: "r.labelNames"
-    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR r.viaApp IS NOT NULL THEN 'bot' WHEN any(l IN split(coalesce(r.body, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) OR coalesce(r.body, '') CONTAINS 'Generated with [Claude Code]' THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
+    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR r.viaApp IS NOT NULL THEN 'bot' WHEN any(l IN split(coalesce(r.body, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) OR coalesce(r.body, '') CONTAINS 'Generated with [Claude Code]' THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
     authorRole: "CASE r.author_association WHEN 'OWNER' THEN 'owner' WHEN 'MEMBER' THEN 'member' WHEN 'COLLABORATOR' THEN 'collaborator' WHEN 'CONTRIBUTOR' THEN 'contributor' WHEN 'FIRST_TIME_CONTRIBUTOR' THEN 'first-timer' WHEN 'FIRST_TIMER' THEN 'first-timer' WHEN 'NONE' THEN 'outsider' ELSE '' END"
     isChangeRequest: "r.prUrl IS NOT NULL"
     mergedAt: "r.prMergedAt"
@@ -167,9 +167,20 @@
     prMergedAt: pull_request.merged_at   # and when it was merged, if it was
   args:
     state: all                       # default is open-only — include closed too
-  pushdown:                          # GitHub applies `since` (on updated_at) itself; everything else is filtered after the read
-    - { property: updatedAt, op: GREATER_THAN_OR_EQUAL, argPath: since, clause: "{value}" }
-  paging: { style: page, size: 100, maxPages: 10 }
+  pushdown:                          # GitHub applies `since` (on updated_at) itself; everything else is filtered after the read.
+    # valuePattern is the SHAPE gate on every date rule: a bound that is not an ISO-8601 instant ('last
+    # week') stays in the graph instead of being sent as ?since=last+week, which GitHub answers with 500.
+    - { property: updatedAt, op: GREATER_THAN_OR_EQUAL, argPath: since, clause: "{value}", valuePattern: '(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)' }
+    # An openedAt lower bound is pushed as the SAME `since`: a record opened after X was updated after
+    # X, so GitHub's updated_at filter is a superset of the predicate and the graph re-applies the
+    # exact one (the spec's rule: pushdown changes cost, never rows). Without this, "issues opened
+    # since X" walked the newest 1,000 and was reported PARTIAL for a window the source could narrow.
+    # One query must not bound BOTH updatedAt and openedAt: two values would compete for one `since`.
+    - { property: openedAt, op: GREATER_THAN_OR_EQUAL, argPath: since, clause: "{value}", valuePattern: '(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)' }
+  # 40 pages, not the 10 the other doors take: this is the door the time-boxed views read, and a
+  # quarter or a year of an active repository is more than 1,000 records (a busy private repository
+  # touched several thousand in the ten months to November 2026). The read stays bounded; `since` keeps it short.
+  paging: { style: page, size: 100, maxPages: 40 }
   compute:                           # the Issue contract; `r` is the record plus what project lifted
     key: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4]) + '#' + toString(r.number)"
     repositoryKey: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4])"
@@ -177,7 +188,7 @@
     resolution: "CASE r.state_reason WHEN 'completed' THEN 'completed' WHEN 'not_planned' THEN 'not-planned' WHEN 'duplicate' THEN 'duplicate' ELSE '' END"
     kind: "CASE WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'bug') THEN 'bug' WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'enhancement' OR toLower(l) CONTAINS 'feature') THEN 'feature' WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'question') THEN 'question' WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'doc') THEN 'documentation' WHEN any(l IN coalesce(r.labelNames, []) WHERE toLower(l) CONTAINS 'task' OR toLower(l) CONTAINS 'chore') THEN 'task' ELSE '' END"
     labels: "r.labelNames"
-    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR r.viaApp IS NOT NULL THEN 'bot' WHEN any(l IN split(coalesce(r.body, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) OR coalesce(r.body, '') CONTAINS 'Generated with [Claude Code]' THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
+    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR r.viaApp IS NOT NULL THEN 'bot' WHEN any(l IN split(coalesce(r.body, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) OR coalesce(r.body, '') CONTAINS 'Generated with [Claude Code]' THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
     authorRole: "CASE r.author_association WHEN 'OWNER' THEN 'owner' WHEN 'MEMBER' THEN 'member' WHEN 'COLLABORATOR' THEN 'collaborator' WHEN 'CONTRIBUTOR' THEN 'contributor' WHEN 'FIRST_TIME_CONTRIBUTOR' THEN 'first-timer' WHEN 'FIRST_TIMER' THEN 'first-timer' WHEN 'NONE' THEN 'outsider' ELSE '' END"
     isChangeRequest: "r.prUrl IS NOT NULL"
     mergedAt: "r.prMergedAt"
@@ -224,7 +235,7 @@
     repositoryKey: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4])"
     status: "CASE WHEN r.merged_at IS NOT NULL THEN 'merged' ELSE r.state END"
     labels: "r.labelNames"
-    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR r.viaApp IS NOT NULL THEN 'bot' WHEN any(l IN split(coalesce(r.body, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) OR coalesce(r.body, '') CONTAINS 'Generated with [Claude Code]' THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
+    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR r.viaApp IS NOT NULL THEN 'bot' WHEN any(l IN split(coalesce(r.body, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) OR coalesce(r.body, '') CONTAINS 'Generated with [Claude Code]' THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
     authorRole: "CASE r.author_association WHEN 'OWNER' THEN 'owner' WHEN 'MEMBER' THEN 'member' WHEN 'COLLABORATOR' THEN 'collaborator' WHEN 'CONTRIBUTOR' THEN 'contributor' WHEN 'FIRST_TIME_CONTRIBUTOR' THEN 'first-timer' WHEN 'FIRST_TIMER' THEN 'first-timer' WHEN 'NONE' THEN 'outsider' ELSE '' END"
     openedAt: "r.created_at"
     updatedAt: "r.updated_at"
@@ -270,7 +281,7 @@
     repositoryKey: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4])"
     status: "CASE WHEN r.prMergedAt IS NOT NULL THEN 'merged' ELSE r.state END"
     labels: "r.labelNames"
-    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR r.viaApp IS NOT NULL THEN 'bot' WHEN any(l IN split(coalesce(r.body, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) OR coalesce(r.body, '') CONTAINS 'Generated with [Claude Code]' THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
+    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR r.viaApp IS NOT NULL THEN 'bot' WHEN any(l IN split(coalesce(r.body, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) OR coalesce(r.body, '') CONTAINS 'Generated with [Claude Code]' THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
     authorRole: "CASE r.author_association WHEN 'OWNER' THEN 'owner' WHEN 'MEMBER' THEN 'member' WHEN 'COLLABORATOR' THEN 'collaborator' WHEN 'CONTRIBUTOR' THEN 'contributor' WHEN 'FIRST_TIME_CONTRIBUTOR' THEN 'first-timer' WHEN 'FIRST_TIMER' THEN 'first-timer' WHEN 'NONE' THEN 'outsider' ELSE '' END"
     openedAt: "r.created_at"
     updatedAt: "r.updated_at"
@@ -313,7 +324,7 @@
     repositoryKey: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4])"
     status: "CASE WHEN r.prMergedAt IS NOT NULL THEN 'merged' ELSE r.state END"
     labels: "r.labelNames"
-    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR r.viaApp IS NOT NULL THEN 'bot' WHEN any(l IN split(coalesce(r.body, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) OR coalesce(r.body, '') CONTAINS 'Generated with [Claude Code]' THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
+    authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR r.viaApp IS NOT NULL THEN 'bot' WHEN any(l IN split(coalesce(r.body, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) OR coalesce(r.body, '') CONTAINS 'Generated with [Claude Code]' THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
     authorRole: "CASE r.author_association WHEN 'OWNER' THEN 'owner' WHEN 'MEMBER' THEN 'member' WHEN 'COLLABORATOR' THEN 'collaborator' WHEN 'CONTRIBUTOR' THEN 'contributor' WHEN 'FIRST_TIME_CONTRIBUTOR' THEN 'first-timer' WHEN 'FIRST_TIMER' THEN 'first-timer' WHEN 'NONE' THEN 'outsider' ELSE '' END"
     openedAt: "r.created_at"
     updatedAt: "r.updated_at"
@@ -394,7 +405,7 @@
     direction: desc
   paging: { style: page, size: 100, maxPages: 10 }
   pushdown:                          # GitHub applies `since` itself; everything else is filtered after the read
-    - { property: createdAt, op: GREATER_THAN_OR_EQUAL, argPath: since, clause: "{value}" }
+    - { property: createdAt, op: GREATER_THAN_OR_EQUAL, argPath: since, clause: "{value}", valuePattern: '(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)' }
   project:
     authorLogin: user.login
     authorType: user.type
@@ -427,7 +438,7 @@
     direction: desc
   paging: { style: page, size: 100, maxPages: 10 }
   pushdown:
-    - { property: createdAt, op: GREATER_THAN_OR_EQUAL, argPath: since, clause: "{value}" }
+    - { property: createdAt, op: GREATER_THAN_OR_EQUAL, argPath: since, clause: "{value}", valuePattern: '(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)' }
   project:
     authorLogin: user.login
     authorType: user.type
@@ -536,8 +547,8 @@
   maxKeysPerCall: 1
   paging: { style: page, size: 100, maxPages: 10 }
   pushdown:                          # GitHub applies since/until (on the author date) and author itself
-    - { property: authoredAt, op: GREATER_THAN_OR_EQUAL, argPath: since, clause: "{value}" }
-    - { property: authoredAt, op: LESS_THAN_OR_EQUAL, argPath: until, clause: "{value}" }
+    - { property: authoredAt, op: GREATER_THAN_OR_EQUAL, argPath: since, clause: "{value}", valuePattern: '(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)' }
+    - { property: authoredAt, op: LESS_THAN_OR_EQUAL, argPath: until, clause: "{value}", valuePattern: '(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)' }
     - { property: authorLogin, op: EQUALS, argPath: author, clause: "{value}" }
   project:                           # the commit object's nested fields, lifted
     message: commit.message

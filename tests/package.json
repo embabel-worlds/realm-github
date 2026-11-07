@@ -1,0 +1,11 @@
+{
+  "name": "realm-github-page-tests",
+  "private": true,
+  "description": "The Ship rate page harness: Playwright over captured view envelopes. Separate from the realm's own package.json so the TypeScript tooling and the browser tests install independently.",
+  "scripts": {
+    "test:app": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  }
+}

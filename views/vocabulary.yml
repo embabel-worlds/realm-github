@@ -9,8 +9,13 @@
 # ranked LIMIT followed by a hop, or preceded by a graph-side filter, is refused as unprovable
 # (embabel/me, filed from this realm). So the views that hop — reviews, files — take a `since`
 # window that GitHub applies itself (list-for-repo's and list-commits' `since`), which both
-# completes the fetch and bounds the hop's anchors. Every view's description repeats the vocabulary's honest limit: a person who pasted
-# an agent's text with no trailer and no marker counts as human.
+# completes the fetch and bounds the hop's anchors. Every window has an `until` too, applied in
+# the graph (empty = open-ended): a harness that reconciles a view against GitHub needs a window
+# that stops before "now", or a comment posted between its two reads moves the figure. The issue
+# door pushes an openedAt bound as GitHub's `since` (updated_at, a superset the graph refines), so
+# "opened since X" is a complete read, not the newest 1,000 reported PARTIAL. Every view's
+# description repeats the vocabulary's honest limit: a person who pasted an agent's text with no
+# trailer and no marker counts as human.
 #
 # THE DOORS. Comments and commits are read newest first through the repository door, up to
 # 1,000 each (10 pages), with `since` pushed to GitHub when a literal lower bound is given; a
@@ -23,32 +28,39 @@
     SELECT THIS for "what share of the work in owner/repo is machine-generated", "how many
     pull requests / issues / comments / commits were written by bots, by coding agents, by
     people with an agent's help", "human versus machine in owner/repo". One row per record kind
-    (issue, change-request, comment, commit) and authorKind, with the count and its share of
-    that kind. Each kind is read newest first up to 1,000 records; the `since` bound narrows
-    comments and commits at GitHub. A person who pasted an agent's text with no trailer and no
-    marker counts as human here.
+    (issue, change-request, comment — on the conversation, review-comment — on a line of a
+    diff, commit) and authorKind, with the count and its share of that kind. The `since` bound is
+    pushed to GitHub for every kind, so a window is a complete read up to 1,000 records per kind.
+    A person who pasted an agent's text with no trailer and no marker counts as human here.
   params:
     repo:  { type: string, default: "embabel/embabel-agent", description: "Repository as owner/repo." }
-    since: { type: string, default: "1970-01-01T00:00:00Z", description: "ISO-8601 lower bound on when each record was written; pushed to GitHub for comments and commits." }
+    since: { type: string, default: "1970-01-01T00:00:00Z", description: "ISO-8601 lower bound on when each record was written; pushed to GitHub." }
+    until: { type: string, default: "", description: "ISO-8601 upper bound (exclusive) on when each record was written; empty for no bound." }
   cypher: |
     MATCH (r:GitHubRepository {full_name: $repo})
     CALL {
       WITH r
       MATCH (r)-[:HAS_ISSUE]->(i:Issue)
       WITH i, i.openedAt AS openedAt, i.isChangeRequest AS isPr, i.authorKind AS ik
-      WHERE openedAt >= $since
+      WHERE openedAt >= $since AND ($until = '' OR openedAt < $until)
       RETURN CASE WHEN isPr THEN 'change-request' ELSE 'issue' END AS recordKind, ik AS authorKind
       UNION ALL
       WITH r
       MATCH (r)-[:HAS_COMMENT]->(c:Comment)
       WITH c, c.createdAt AS createdAt, c.authorKind AS ck
-      WHERE createdAt >= $since
+      WHERE createdAt >= $since AND ($until = '' OR createdAt < $until)
       RETURN 'comment' AS recordKind, ck AS authorKind
+      UNION ALL
+      WITH r
+      MATCH (r)-[:HAS_REVIEW_COMMENT]->(l:Comment)
+      WITH l, l.createdAt AS lineCreatedAt, l.authorKind AS lk
+      WHERE lineCreatedAt >= $since AND ($until = '' OR lineCreatedAt < $until)
+      RETURN 'review-comment' AS recordKind, lk AS authorKind
       UNION ALL
       WITH r
       MATCH (r)-[:HAS_COMMIT]->(m:Commit)
       WITH m, m.authoredAt AS authoredAt, m.authorKind AS mk
-      WHERE authoredAt >= $since
+      WHERE authoredAt >= $since AND ($until = '' OR authoredAt < $until)
       RETURN 'commit' AS recordKind, mk AS authorKind
     }
     WITH recordKind, authorKind, count(*) AS n
@@ -64,41 +76,92 @@
     month", "how do agent-opened PRs end — merged or closed", "agent PR merge rate", "are
     assisted PRs merged faster". One row per month, authorKind and outcome (open, merged,
     closed), with the count and the mean hours from opening to merge for the merged ones.
-    Newest 1,000 pull requests. Assisted means a person's PR whose description declares an
-    agent generated it; a PR an agent wrote with no marker counts as human.
+    The `since` bound is pushed to GitHub, so a window is a complete read up to 1,000 pull
+    requests. Assisted means a person's PR whose description declares an agent generated it; a
+    PR an agent wrote with no marker counts as human.
   params:
     repo:  { type: string, default: "embabel/embabel-agent", description: "Repository as owner/repo." }
-    since: { type: string, default: "1970-01-01T00:00:00Z", description: "ISO-8601 lower bound on openedAt." }
+    since: { type: string, default: "1970-01-01T00:00:00Z", description: "ISO-8601 lower bound on openedAt; pushed to GitHub." }
+    until: { type: string, default: "", description: "ISO-8601 upper bound (exclusive) on openedAt; empty for no bound." }
+  # Through the ISSUE door, not HAS_PULL_REQUEST: GitHub's pulls/list takes no `since`, so that door
+  # is always the newest 1,000 and a count over it a lower bound; list-for-repo narrows at the source.
   cypher: |
-    MATCH (:GitHubRepository {full_name: $repo})-[:HAS_PULL_REQUEST]->(pr:ChangeRequest)
-    WITH pr, pr.openedAt AS openedAt, pr.mergedAt AS mergedAt, pr.status AS status, pr.authorKind AS authorKind
-    WHERE openedAt >= $since
-    WITH substring(openedAt, 0, 7) AS month, authorKind, status, count(pr) AS n,
+    MATCH (:GitHubRepository {full_name: $repo})-[:HAS_ISSUE]->(pr:Issue)
+    WITH pr, pr.openedAt AS openedAt, pr.isChangeRequest AS isPr, pr.mergedAt AS mergedAt, pr.status AS state, pr.authorKind AS authorKind
+    WHERE openedAt >= $since AND ($until = '' OR openedAt < $until) AND isPr = true
+    WITH substring(openedAt, 0, 7) AS month, authorKind,
+         CASE WHEN mergedAt IS NOT NULL THEN 'merged' ELSE state END AS status,
+         count(pr) AS n,
          avg(CASE WHEN mergedAt IS NULL THEN null
                   ELSE duration.inSeconds(datetime(openedAt), datetime(mergedAt)).seconds / 3600.0 END) AS meanHoursToMerge
     RETURN month, authorKind, status, n,
            CASE WHEN meanHoursToMerge IS NULL THEN null ELSE round(meanHoursToMerge, 1) END AS meanHoursToMerge
     ORDER BY month, authorKind, status
 
+- name: GitHubChangeRequestThroughput
+  description: >-
+    SELECT THIS for "PR merge rate last week in owner/repo", "how many pull requests were merged
+    or closed this month, this quarter, this year", "PR volume by week, human versus machine",
+    "pull request throughput by period and author kind", "how many PRs did agents open last
+    quarter and how many of them were merged". One row per period (week, month, quarter or year,
+    named by its first UTC day) and authorKind, plus an 'all' row per period, with: opened (PRs
+    opened in the period), merged (merged in it), closedUnmerged (closed without merging in it),
+    resolved (merged + closedUnmerged), mergedPctOfResolved, and the mean hours from opening to
+    merge for the ones merged in it. Each event is counted in the period it happened, so a PR
+    opened in March and merged in April is in both periods, and a period's merges may exceed its
+    openings. The `since` bound is pushed to GitHub, so a window is a complete read up to 1,000
+    pull requests touched since it. Assisted means a person's PR whose description declares an
+    agent generated it; a PR an agent wrote with no marker counts as human.
+  params:
+    repo:   { type: string, default: "embabel/embabel-agent", description: "Repository as owner/repo." }
+    period: { type: string, default: "week", description: "The time box: week (ISO, Monday start), month, quarter or year." }
+    since:  { type: string, default: "2026-01-01T00:00:00Z", description: "ISO-8601 lower bound on when each event happened; pushed to GitHub as an updated-since bound the graph refines." }
+    until:  { type: string, default: "", description: "ISO-8601 upper bound (exclusive) on when each event happened; empty for no bound." }
+  # Three dated events per PR, unwound so each lands in the period it happened in: a PR is opened once,
+  # and then either merged or closed, never both. The updatedAt bound is the one GitHub applies: any of
+  # the three events after X moved updated_at past X, so the read is a superset the graph narrows.
+  # The second UNWIND counts every event once more under 'all', so "merge rate last week" is one row.
+  cypher: |
+    MATCH (:GitHubRepository {full_name: $repo})-[:HAS_ISSUE]->(pr:Issue)
+    WHERE pr.updatedAt >= $since
+    WITH pr, pr.isChangeRequest AS isPr, pr.authorKind AS authorKind, pr.openedAt AS openedAt, pr.mergedAt AS mergedAt, pr.closedAt AS closedAt
+    WHERE isPr = true
+    UNWIND [{at: openedAt, event: 'opened'}, {at: mergedAt, event: 'merged'}, {at: CASE WHEN mergedAt IS NULL THEN closedAt ELSE null END, event: 'closed'}] AS ev
+    WITH authorKind, openedAt, mergedAt, ev
+    WHERE ev.at IS NOT NULL AND ev.at >= $since AND ($until = '' OR ev.at < $until)
+    UNWIND [authorKind, 'all'] AS kind
+    WITH toString(date.truncate($period, datetime(ev.at))) AS period, kind,
+         sum(CASE ev.event WHEN 'opened' THEN 1 ELSE 0 END) AS opened,
+         sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) AS merged,
+         sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END) AS closedUnmerged,
+         avg(CASE WHEN ev.event = 'merged' THEN duration.inSeconds(datetime(openedAt), datetime(mergedAt)).seconds / 3600.0 ELSE null END) AS meanHoursToMerge
+    RETURN period, kind AS authorKind, opened, merged, closedUnmerged, merged + closedUnmerged AS resolved,
+           CASE WHEN merged + closedUnmerged = 0 THEN null ELSE round(100.0 * merged / (merged + closedUnmerged), 1) END AS mergedPctOfResolved,
+           CASE WHEN meanHoursToMerge IS NULL THEN null ELSE round(meanHoursToMerge, 1) END AS meanHoursToMerge
+    ORDER BY period, authorKind
+
 - name: GitHubReviewBurden
   description: >-
     SELECT THIS for "do agent-written pull requests draw more review than human ones in
     owner/repo", "how many human review comments does an assisted PR get", "review burden by
-    author kind", "who reviews the agents' work". For the pull requests merged and last
-    touched since a date: one row per PR authorKind, with PRs, the mean number of review-line
-    comments per PR, how many of those comments came from people, the mean number of reviews
-    per PR, and how many PRs had changes requested. GitHub narrows the read to `since` itself;
-    then one call per PR for its reviews and one for its line comments, so keep the window to
-    what a hundred PRs cover. Assisted means a person's PR whose description declares an agent
-    generated it; a PR an agent wrote with no marker counts as human.
+    author kind", "who reviews the agents' work". For the pull requests MERGED in a window:
+    one row per PR authorKind, with PRs, the mean number of review-line comments per PR, how
+    many of those comments came from people, the mean number of reviews per PR, and how many
+    PRs had changes requested. GitHub narrows the read to `since` itself; then one call per PR
+    for its reviews and one for its line comments, so keep the window to what a hundred PRs
+    cover. Assisted means a person's PR whose description declares an agent generated it; a PR
+    an agent wrote with no marker counts as human.
   params:
     repo:  { type: string, default: "embabel/embabel-agent", description: "Repository as owner/repo." }
-    since: { type: string, default: "2026-10-01T00:00:00Z", description: "ISO-8601 lower bound on when the PR was last updated, pushed to GitHub. Keep it to a window of at most a hundred merged PRs." }
+    since: { type: string, default: "2026-10-01T00:00:00Z", description: "ISO-8601 lower bound on mergedAt, pushed to GitHub (as an updated-since bound the graph refines). Keep it to a window of at most a hundred merged PRs." }
+    until: { type: string, default: "", description: "ISO-8601 upper bound (exclusive) on mergedAt; empty for no bound." }
+  # A PR merged after X was updated after X, so the updatedAt bound is what GitHub applies and
+  # mergedAt is the window — a merge time never moves, where updatedAt moves on every later comment.
   cypher: |
     MATCH (:GitHubRepository {full_name: $repo})-[:HAS_ISSUE]->(pr:Issue)
     WHERE pr.updatedAt >= $since
     WITH pr, pr.isChangeRequest AS isPr, pr.mergedAt AS mergedAt, pr.authorKind AS authorKind
-    WHERE isPr = true AND mergedAt IS NOT NULL
+    WHERE isPr = true AND mergedAt IS NOT NULL AND mergedAt >= $since AND ($until = '' OR mergedAt < $until)
     OPTIONAL MATCH (pr)-[:HAS_REVIEW]->(rv:Review)
     WITH pr, authorKind, collect(rv.verdict) AS verdicts
     OPTIONAL MATCH (pr)-[:HAS_REVIEW_COMMENT]->(c:Comment)
@@ -127,11 +190,11 @@
   params:
     repo:  { type: string, default: "embabel/embabel-agent", description: "Repository as owner/repo." }
     since: { type: string, default: "2026-10-01T00:00:00Z", description: "ISO-8601 lower bound on the author date, pushed to GitHub. Keep it to a window of at most a hundred commits." }
+    until: { type: string, default: "", description: "ISO-8601 upper bound (exclusive) on the author date; empty for no bound." }
   cypher: |
     MATCH (:GitHubRepository {full_name: $repo})-[:HAS_COMMIT]->(c:Commit)
-    WHERE c.authoredAt >= $since
-    WITH c, c.isMerge AS isMerge, c.authorKind AS authorKind
-    WHERE isMerge = false
+    WITH c, c.authoredAt AS authoredAt, c.isMerge AS isMerge, c.authorKind AS authorKind
+    WHERE authoredAt >= $since AND ($until = '' OR authoredAt < $until) AND isMerge = false
     MATCH (c)-[:CHANGED]->(f:FileChange)
     WITH c, authorKind, count(f) AS files, sum(f.additions + f.deletions) AS lines,
          sum(CASE WHEN f.path CONTAINS '/test/' OR f.path CONTAINS '/tests/' OR f.path CONTAINS '__tests__' OR f.path ENDS WITH '.test.ts' OR f.path ENDS WITH 'Test.kt' OR f.path ENDS WITH 'Test.java' OR f.path ENDS WITH '.spec.js' THEN 1 ELSE 0 END) AS testFiles
@@ -153,12 +216,12 @@
   params:
     repo:  { type: string, default: "embabel/embabel-agent", description: "Repository as owner/repo." }
     since: { type: string, default: "2026-10-01T00:00:00Z", description: "ISO-8601 lower bound on the author date, pushed to GitHub." }
+    until: { type: string, default: "", description: "ISO-8601 upper bound (exclusive) on the author date; empty for no bound." }
     limit: { type: int, default: 25, description: "How many paths to return." }
   cypher: |
     MATCH (:GitHubRepository {full_name: $repo})-[:HAS_COMMIT]->(c:Commit)
-    WHERE c.authoredAt >= $since
-    WITH c, c.isMerge AS isMerge
-    WHERE isMerge = false
+    WITH c, c.authoredAt AS authoredAt, c.isMerge AS isMerge
+    WHERE authoredAt >= $since AND ($until = '' OR authoredAt < $until) AND isMerge = false
     MATCH (c)-[:CHANGED]->(f:FileChange)
     WITH f.path AS path, count(DISTINCT c) AS commits, sum(f.additions + f.deletions) AS lines,
          sum(CASE WHEN c.authorKind = 'human' THEN 1 ELSE 0 END) AS byHumans,
@@ -189,10 +252,12 @@
   params:
     repo:  { type: string, default: "embabel/embabel-agent", description: "Repository as owner/repo." }
     since: { type: string, default: "2026-10-25T00:00:00Z", description: "ISO-8601 lower bound on createdAt, pushed to GitHub. Keep the window small: every comment in it is judged." }
+    until: { type: string, default: "", description: "ISO-8601 upper bound (exclusive) on createdAt; empty for no bound." }
     only:  { type: string, default: "", description: "Leave empty for every comment, or 'disagree' for only the comments whose judged label contradicts the declared kind." }
   cypher: |
     MATCH (:GitHubRepository {full_name: $repo})-[:HAS_COMMENT]->(c:Comment)
-    WHERE c.createdAt >= $since
+    WITH c, c.createdAt AS createdAt
+    WHERE createdAt >= $since AND ($until = '' OR createdAt < $until)
     WITH c, c.authorKind AS declared, c.authorLogin AS author, c.subjectKey AS on, c.createdAt AS at, c.sourceUrl AS url,
          ai.classify(c, 'Does the comment TEXT read as written by a person or generated by a machine? machine: templated or tool output (quality-gate reports, dependency bumps, CI or coverage summaries, badges) or model-generated prose (uniform structure, exhaustive bullet lists, bold labels and headers, hedged summary sentences, no situated first-person detail). human: conversational, situated, terse, idiosyncratic, or clearly reacting to something specific. unsure: too short or too generic to tell. Answer one of: human, machine, unsure') AS judged
     WITH c, declared, judged, author, on, at, url,
@@ -216,9 +281,11 @@
   params:
     repo:  { type: string, default: "embabel/embabel-agent", description: "Repository as owner/repo." }
     since: { type: string, default: "2026-10-25T00:00:00Z", description: "ISO-8601 lower bound on createdAt, pushed to GitHub." }
+    until: { type: string, default: "", description: "ISO-8601 upper bound (exclusive) on createdAt; empty for no bound." }
   cypher: |
     MATCH (:GitHubRepository {full_name: $repo})-[:HAS_COMMENT]->(c:Comment)
-    WHERE c.createdAt >= $since
+    WITH c, c.createdAt AS createdAt
+    WHERE createdAt >= $since AND ($until = '' OR createdAt < $until)
     WITH c.authorKind AS declared,
          ai.classify(c, 'Does the comment TEXT read as written by a person or generated by a machine? machine: templated or tool output (quality-gate reports, dependency bumps, CI or coverage summaries, badges) or model-generated prose (uniform structure, exhaustive bullet lists, bold labels and headers, hedged summary sentences, no situated first-person detail). human: conversational, situated, terse, idiosyncratic, or clearly reacting to something specific. unsure: too short or too generic to tell. Answer one of: human, machine, unsure') AS judged
     WITH declared, judged, count(*) AS n

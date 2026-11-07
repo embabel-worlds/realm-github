@@ -23,7 +23,15 @@ If a call returns `gateway.gh.foo is not a world tool`, the error lists every va
 assisted PRs draw more review", "how big are the agents' commits", "which files change most"
 are ANSWERED views, not things to page out of `gateway.gh` by hand: run `GitHubAuthorship`,
 `GitHubChangeRequestsByAuthorKind`, `GitHubReviewBurden`, `GitHubCommitSize` or
-`GitHubFileHotspots` (`views/vocabulary.yml`) with `repo: owner/repo`. Every issue, PR,
+`GitHubFileHotspots` (`views/vocabulary.yml`) with `repo: owner/repo`; "what was the PR merge rate last
+week / this month / this quarter / this year, and how much of the volume was people versus machines" is
+`GitHubChangeRequestThroughput` with `period: week|month|quarter|year` and a `since` on the period's first
+day (its rate is merged ÷ resolved; the page `apps/ship-rate.html` shows it for repositories side by side); and for "does this comment read as
+written by a person or a machine" `GitHubCommentReadsAs` or the agreement matrix `GitHubCommentProvenance`.
+Every view takes `since` (pushed to GitHub) and `until` (applied in the graph); every figure they return
+was reconciled against GitHub's API by `tests/verify.sh`. "Who breaks the build" is the Actions realm's
+`ActionsBreakageByAuthorKind`. A free-text question that does not say "github" may be routed to no realm by
+the ask door; pass `scope: 'github'` (the focus in `focuses/github.yml`) and it sees only these realms. Every issue, PR,
 comment, review and commit the realm reads carries the dev vocabulary's `authorKind` —
 `human`, `bot`, `agent`, `assisted` (a person's record declaring an agent's hand), `unknown`
 — and the vocabulary's labels (`Issue`, `ChangeRequest`, `Comment`, `Review`, `Commit`,
