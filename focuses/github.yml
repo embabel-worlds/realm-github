@@ -1,0 +1,10 @@
+# The scope a caller names to ask THIS realm — `kg_ask(scope: 'github')`, `/focus github` — when
+# the question's own words would not route to it (one that says "pull requests in owner/repo" and
+# never "github"). It takes the two GitHub realms together with the vocabulary they are children
+# of, so a question about who breaks the build (a Build of one, a Commit of the other) sees both.
+name: github
+displayName: GitHub
+description: "Ask about issues, pull requests, comments, reviews, commits and CI runs in a GitHub repository, and who wrote each — a person, a bot or a coding agent"
+icon: "🐙"
+realms: [github, github-actions, dev-vocabulary]
+builtins: [views]

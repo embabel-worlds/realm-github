@@ -1,0 +1,97 @@
+# The natural-language battery — what a person types at this realm, run through the ask door by
+# tests/verify.sh. Each count, share and duration asserts matchesView: the ask's figure must equal
+# the curated view's for the same window, so the realm reconciles against itself and no literal
+# rots. Every question that ever disappoints a user becomes a permanent entry.
+#
+# Placeholders the harness fills: {repo} (default embabel/embabel-agent); {sinceWideDay} and
+# {sinceHopDay}, the UTC days the harness windows start on (40 and 18 days back); {sinceWide},
+# {sinceHop}, {until}, the same as full timestamps for a view's args; {lastWeekStart}/{lastWeekEnd}
+# and {lastMonthStart}/{lastMonthEnd}, the last complete ISO week and calendar month as timestamps,
+# with {lastWeekStartDay}, {lastWeekEndDay} and {lastMonthName} as a person would say them.
+#
+# expect forms:
+#   matchesView: { name, column, args?, where?, sum? } — the figure in the row of the view's rows
+#     that matches `where` (first such row; `sum: true` adds the column over all of them) must
+#     appear in the ask's answer, as a number to one decimal or as a string.
+#   nonEmpty: true | minRows: n
+# adversarial: true — the sources do not carry the answer. Asked three times; a response is correct
+#   when it returns no rows or its generated Cypher touches only declared properties.
+#
+# These questions do NOT say "github": a person asking about owner/repo does not. The ask door
+# routes a question by the realm's name and its labels' distinctive words; a question routed
+# elsewhere fails here, and that is the finding, not a reason to reword the question.
+
+# Who wrote what — GitHubAuthorship
+- question: "how many issues were opened in {repo} since {sinceWideDay}"
+  expect: { matchesView: { name: GitHubAuthorship, column: n, sum: true, where: { recordKind: issue }, args: { since: "{sinceWide}", until: "{until}" } } }
+- question: "how many pull requests were opened in {repo} since {sinceWideDay}"
+  expect: { matchesView: { name: GitHubAuthorship, column: n, sum: true, where: { recordKind: change-request }, args: { since: "{sinceWide}", until: "{until}" } } }
+- question: "what share of the pull requests opened in {repo} since {sinceWideDay} were written by people"
+  expect: { matchesView: { name: GitHubAuthorship, column: pct, where: { recordKind: change-request, authorKind: human }, args: { since: "{sinceWide}", until: "{until}" } } }
+- question: "how many comments in {repo} since {sinceWideDay} were posted by bots"
+  expect: { matchesView: { name: GitHubAuthorship, column: n, where: { recordKind: comment, authorKind: bot }, args: { since: "{sinceWide}", until: "{until}" } } }
+- question: "what proportion of the PR review comments in {repo} since {sinceWideDay} are machine-generated"
+  expect: { matchesView: { name: GitHubAuthorship, column: pct, where: { recordKind: review-comment, authorKind: human }, args: { since: "{sinceWide}", until: "{until}" } } }   # the human share is the complement the answer states either way
+- question: "how many commits to {repo} since {sinceWideDay} were co-authored by a coding agent"
+  expect: { matchesView: { name: GitHubAuthorship, column: n, where: { recordKind: commit, authorKind: assisted }, args: { since: "{sinceWide}", until: "{until}" } } }
+- question: "human versus machine in {repo} since {sinceWideDay}"
+  expect: { matchesView: { name: GitHubAuthorship, column: n, where: { recordKind: comment, authorKind: human }, args: { since: "{sinceWide}", until: "{until}" } } }
+
+# The vocabulary's own words, as a person who also runs GitLab would use them
+- question: "how many change requests in {repo} since {sinceWideDay} were raised by humans"
+  expect: { matchesView: { name: GitHubAuthorship, column: n, where: { recordKind: change-request, authorKind: human }, args: { since: "{sinceWide}", until: "{until}" } } }
+
+# How change requests end — GitHubChangeRequestsByAuthorKind
+- question: "how many pull requests opened in {repo} since {sinceWideDay} have been merged, by author kind"
+  expect: { matchesView: { name: GitHubChangeRequestsByAuthorKind, column: n, where: { authorKind: human, status: merged }, args: { since: "{sinceWide}", until: "{until}" } } }
+- question: "how long do people's pull requests in {repo} take to merge compared with assisted ones, for PRs opened since {sinceWideDay}"
+  expect: { matchesView: { name: GitHubChangeRequestsByAuthorKind, column: meanHoursToMerge, where: { authorKind: human, status: merged }, args: { since: "{sinceWide}", until: "{until}" } } }
+- question: "agent PR merge rate in {repo} since {sinceWideDay}"
+  expect: { minRows: 0 }   # a repository with no agent-opened PRs is honestly empty; the question must still run
+
+# Review burden — GitHubReviewBurden
+- question: "do assisted pull requests in {repo} merged since {sinceHopDay} get more review comments than human ones"
+  expect: { matchesView: { name: GitHubReviewBurden, column: lineCommentsPerPr, where: { authorKind: human }, args: { since: "{sinceHop}", until: "{until}" } } }
+- question: "who reviews the agents' work in {repo}"
+  expect: { minRows: 0 }
+
+# Commits and files — GitHubCommitSize, GitHubFileHotspots
+- question: "how big are the agents' commits compared with people's in {repo} since {sinceHopDay}"
+  expect: { matchesView: { name: GitHubCommitSize, column: meanFiles, where: { authorKind: human }, args: { since: "{sinceHop}", until: "{until}" } } }
+- question: "which files changed most in {repo} since {sinceHopDay}"
+  expect: { matchesView: { name: GitHubFileHotspots, column: path, args: { since: "{sinceHop}", until: "{until}" } } }
+- question: "what changed in {repo} since {sinceHopDay}"
+  expect: { nonEmpty: true }
+
+# Judged, not declared — GitHubCommentReadsAs, GitHubCommentProvenance
+- question: "which comments in {repo} since {sinceHopDay} look AI-generated"
+  expect: { nonEmpty: true }
+- question: "how many human-attributed comments in {repo} since {sinceHopDay} read as machine-written"
+  expect: { minRows: 0 }   # honestly empty when every person's comment reads as a person's
+
+# The adversarial half: not in the source.
+- question: "how many lines of code does {repo} have"
+  adversarial: true
+  expect: { minRows: 0 }
+- question: "what is the test coverage of {repo}"
+  adversarial: true
+  expect: { minRows: 0 }
+- question: "how many stars does {repo} have"
+  adversarial: true
+  expect: { minRows: 0 }
+- question: "which issues in {repo} were escalated to Jira"
+  adversarial: true
+  expect: { minRows: 0 }
+
+# Volume and time — GitHubChangeRequestThroughput. "Last week" is the last complete ISO week (Monday
+# to Sunday, UTC); the rate is merged ÷ (merged + closed without merging) among the PRs resolved in it.
+- question: "what was the PR merge rate in {repo} last week, the week starting {lastWeekStartDay}"
+  expect: { matchesView: { name: GitHubChangeRequestThroughput, column: mergedPctOfResolved, where: { period: "{lastWeekStartDay}", authorKind: all }, args: { period: week, since: "{lastWeekStart}", until: "{lastWeekEnd}" } } }
+- question: "how many pull requests were merged in {repo} in the week starting {lastWeekStartDay}"
+  expect: { matchesView: { name: GitHubChangeRequestThroughput, column: merged, where: { period: "{lastWeekStartDay}", authorKind: all }, args: { period: week, since: "{lastWeekStart}", until: "{lastWeekEnd}" } } }
+- question: "how many pull requests did people open in {repo} in {lastMonthName}, and how many did coding agents open"
+  expect: { matchesView: { name: GitHubChangeRequestThroughput, column: opened, where: { authorKind: human }, args: { period: month, since: "{lastMonthStart}", until: "{lastMonthEnd}" } } }
+- question: "human versus machine pull request volume in {repo} by month since {sinceWideDay}"
+  expect: { matchesView: { name: GitHubChangeRequestThroughput, column: opened, where: { authorKind: human }, args: { period: month, since: "{sinceWide}", until: "{until}" } } }
+- question: "how many PRs were closed without being merged in {repo} since {sinceWideDay}"
+  expect: { matchesView: { name: GitHubChangeRequestThroughput, column: closedUnmerged, sum: true, where: { authorKind: all }, args: { period: year, since: "{sinceWide}", until: "{until}" } } }

@@ -1,0 +1,2086 @@
+{
+ "view:GitHubChangeRequestThroughput:{\"period\":\"week\",\"repo\":\"embabel/embabel-agent\",\"since\":\"2026-08-10T00:00:00Z\",\"until\":\"\"}": {
+  "executionId": "exec_e8384535-2fd7-4bc6-8127-236fa7fff94a",
+  "operationId": "GitHubChangeRequestThroughput",
+  "contractVersion": "1",
+  "status": "SUCCEEDED",
+  "outcome": "OK",
+  "outputType": "rows",
+  "data": [
+   {
+    "period": "2026-08-10",
+    "authorKind": "all",
+    "opened": 28,
+    "merged": 26,
+    "closedUnmerged": 2,
+    "resolved": 28,
+    "mergedPctOfResolved": 92.9,
+    "meanHoursToMerge": 35.5
+   },
+   {
+    "period": "2026-08-10",
+    "authorKind": "assisted",
+    "opened": 7,
+    "merged": 7,
+    "closedUnmerged": 0,
+    "resolved": 7,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 26.9
+   },
+   {
+    "period": "2026-08-10",
+    "authorKind": "human",
+    "opened": 21,
+    "merged": 19,
+    "closedUnmerged": 2,
+    "resolved": 21,
+    "mergedPctOfResolved": 90.5,
+    "meanHoursToMerge": 38.7
+   },
+   {
+    "period": "2026-08-17",
+    "authorKind": "all",
+    "opened": 16,
+    "merged": 12,
+    "closedUnmerged": 6,
+    "resolved": 18,
+    "mergedPctOfResolved": 66.7,
+    "meanHoursToMerge": 48.7
+   },
+   {
+    "period": "2026-08-17",
+    "authorKind": "assisted",
+    "opened": 0,
+    "merged": 1,
+    "closedUnmerged": 0,
+    "resolved": 1,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 6.1
+   },
+   {
+    "period": "2026-08-17",
+    "authorKind": "human",
+    "opened": 16,
+    "merged": 11,
+    "closedUnmerged": 6,
+    "resolved": 17,
+    "mergedPctOfResolved": 64.7,
+    "meanHoursToMerge": 52.6
+   },
+   {
+    "period": "2026-08-24",
+    "authorKind": "all",
+    "opened": 10,
+    "merged": 12,
+    "closedUnmerged": 0,
+    "resolved": 12,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 121.6
+   },
+   {
+    "period": "2026-08-24",
+    "authorKind": "human",
+    "opened": 10,
+    "merged": 12,
+    "closedUnmerged": 0,
+    "resolved": 12,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 121.6
+   },
+   {
+    "period": "2026-08-31",
+    "authorKind": "all",
+    "opened": 14,
+    "merged": 11,
+    "closedUnmerged": 1,
+    "resolved": 12,
+    "mergedPctOfResolved": 91.7,
+    "meanHoursToMerge": 40.5
+   },
+   {
+    "period": "2026-08-31",
+    "authorKind": "human",
+    "opened": 14,
+    "merged": 11,
+    "closedUnmerged": 1,
+    "resolved": 12,
+    "mergedPctOfResolved": 91.7,
+    "meanHoursToMerge": 40.5
+   },
+   {
+    "period": "2026-09-07",
+    "authorKind": "all",
+    "opened": 3,
+    "merged": 3,
+    "closedUnmerged": 2,
+    "resolved": 5,
+    "mergedPctOfResolved": 60.0,
+    "meanHoursToMerge": 248.5
+   },
+   {
+    "period": "2026-09-07",
+    "authorKind": "assisted",
+    "opened": 1,
+    "merged": 1,
+    "closedUnmerged": 0,
+    "resolved": 1,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 11.3
+   },
+   {
+    "period": "2026-09-07",
+    "authorKind": "human",
+    "opened": 2,
+    "merged": 2,
+    "closedUnmerged": 2,
+    "resolved": 4,
+    "mergedPctOfResolved": 50.0,
+    "meanHoursToMerge": 367.1
+   },
+   {
+    "period": "2026-09-14",
+    "authorKind": "all",
+    "opened": 11,
+    "merged": 7,
+    "closedUnmerged": 1,
+    "resolved": 8,
+    "mergedPctOfResolved": 87.5,
+    "meanHoursToMerge": 1.0
+   },
+   {
+    "period": "2026-09-14",
+    "authorKind": "assisted",
+    "opened": 1,
+    "merged": 1,
+    "closedUnmerged": 0,
+    "resolved": 1,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 3.2
+   },
+   {
+    "period": "2026-09-14",
+    "authorKind": "human",
+    "opened": 10,
+    "merged": 6,
+    "closedUnmerged": 1,
+    "resolved": 7,
+    "mergedPctOfResolved": 85.7,
+    "meanHoursToMerge": 0.6
+   },
+   {
+    "period": "2026-09-21",
+    "authorKind": "all",
+    "opened": 22,
+    "merged": 12,
+    "closedUnmerged": 4,
+    "resolved": 16,
+    "mergedPctOfResolved": 75.0,
+    "meanHoursToMerge": 253.1
+   },
+   {
+    "period": "2026-09-21",
+    "authorKind": "assisted",
+    "opened": 0,
+    "merged": 0,
+    "closedUnmerged": 1,
+    "resolved": 1,
+    "mergedPctOfResolved": 0.0,
+    "meanHoursToMerge": null
+   },
+   {
+    "period": "2026-09-21",
+    "authorKind": "human",
+    "opened": 22,
+    "merged": 12,
+    "closedUnmerged": 3,
+    "resolved": 15,
+    "mergedPctOfResolved": 80.0,
+    "meanHoursToMerge": 253.1
+   },
+   {
+    "period": "2026-09-28",
+    "authorKind": "all",
+    "opened": 18,
+    "merged": 7,
+    "closedUnmerged": 2,
+    "resolved": 9,
+    "mergedPctOfResolved": 77.8,
+    "meanHoursToMerge": 148.4
+   },
+   {
+    "period": "2026-09-28",
+    "authorKind": "assisted",
+    "opened": 2,
+    "merged": 0,
+    "closedUnmerged": 0,
+    "resolved": 0,
+    "mergedPctOfResolved": null,
+    "meanHoursToMerge": null
+   },
+   {
+    "period": "2026-09-28",
+    "authorKind": "human",
+    "opened": 16,
+    "merged": 7,
+    "closedUnmerged": 2,
+    "resolved": 9,
+    "mergedPctOfResolved": 77.8,
+    "meanHoursToMerge": 148.4
+   },
+   {
+    "period": "2026-10-05",
+    "authorKind": "all",
+    "opened": 14,
+    "merged": 13,
+    "closedUnmerged": 0,
+    "resolved": 13,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 158.7
+   },
+   {
+    "period": "2026-10-05",
+    "authorKind": "assisted",
+    "opened": 0,
+    "merged": 1,
+    "closedUnmerged": 0,
+    "resolved": 1,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 131.6
+   },
+   {
+    "period": "2026-10-05",
+    "authorKind": "human",
+    "opened": 14,
+    "merged": 12,
+    "closedUnmerged": 0,
+    "resolved": 12,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 160.9
+   },
+   {
+    "period": "2026-10-12",
+    "authorKind": "all",
+    "opened": 15,
+    "merged": 13,
+    "closedUnmerged": 3,
+    "resolved": 16,
+    "mergedPctOfResolved": 81.3,
+    "meanHoursToMerge": 158.8
+   },
+   {
+    "period": "2026-10-12",
+    "authorKind": "human",
+    "opened": 15,
+    "merged": 13,
+    "closedUnmerged": 3,
+    "resolved": 16,
+    "mergedPctOfResolved": 81.3,
+    "meanHoursToMerge": 158.8
+   },
+   {
+    "period": "2026-10-19",
+    "authorKind": "all",
+    "opened": 22,
+    "merged": 19,
+    "closedUnmerged": 2,
+    "resolved": 21,
+    "mergedPctOfResolved": 90.5,
+    "meanHoursToMerge": 239.0
+   },
+   {
+    "period": "2026-10-19",
+    "authorKind": "assisted",
+    "opened": 1,
+    "merged": 2,
+    "closedUnmerged": 0,
+    "resolved": 2,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 241.0
+   },
+   {
+    "period": "2026-10-19",
+    "authorKind": "human",
+    "opened": 21,
+    "merged": 17,
+    "closedUnmerged": 2,
+    "resolved": 19,
+    "mergedPctOfResolved": 89.5,
+    "meanHoursToMerge": 238.8
+   },
+   {
+    "period": "2026-10-26",
+    "authorKind": "all",
+    "opened": 11,
+    "merged": 6,
+    "closedUnmerged": 0,
+    "resolved": 6,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 62.7
+   },
+   {
+    "period": "2026-10-26",
+    "authorKind": "assisted",
+    "opened": 4,
+    "merged": 2,
+    "closedUnmerged": 0,
+    "resolved": 2,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 4.2
+   },
+   {
+    "period": "2026-10-26",
+    "authorKind": "human",
+    "opened": 7,
+    "merged": 4,
+    "closedUnmerged": 0,
+    "resolved": 4,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 92.0
+   },
+   {
+    "period": "2026-11-02",
+    "authorKind": "all",
+    "opened": 11,
+    "merged": 6,
+    "closedUnmerged": 0,
+    "resolved": 6,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 500.1
+   },
+   {
+    "period": "2026-11-02",
+    "authorKind": "bot",
+    "opened": 1,
+    "merged": 0,
+    "closedUnmerged": 0,
+    "resolved": 0,
+    "mergedPctOfResolved": null,
+    "meanHoursToMerge": null
+   },
+   {
+    "period": "2026-11-02",
+    "authorKind": "human",
+    "opened": 10,
+    "merged": 6,
+    "closedUnmerged": 0,
+    "resolved": 6,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 500.1
+   }
+  ],
+  "warnings": [],
+  "error": null,
+  "columnSources": {
+   "period": "toString(date.truncate('week', datetime(ev.at)))",
+   "authorKind": "UNWIND [pr.authorKind, 'all']",
+   "opened": "sum(CASE ev.event WHEN 'opened' THEN 1 ELSE 0 END)",
+   "merged": "sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END)",
+   "closedUnmerged": "sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END)",
+   "resolved": "(sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) + sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END))",
+   "mergedPctOfResolved": "CASE WHEN (sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) + sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END)) = 0 THEN NULL ELSE round(((100.0 * sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END)) / (sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) + sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END))), 1) END",
+   "meanHoursToMerge": "CASE WHEN avg(CASE WHEN ev.event = 'merged' THEN (duration.inSeconds(datetime(pr.openedAt), datetime(pr.mergedAt)).seconds / 3600.0) ELSE NULL END) IS NULL THEN NULL ELSE round(avg(CASE WHEN ev.event = 'merged' THEN (duration.inSeconds(datetime(pr.openedAt), datetime(pr.mergedAt)).seconds / 3600.0) ELSE NULL END), 1) END"
+  },
+  "metrics": {
+   "durationMs": 110,
+   "externalCalls": 0,
+   "semanticCalls": 0,
+   "cacheHit": true
+  }
+ },
+ "view:GitHubChangeRequestThroughput:{\"period\":\"month\",\"repo\":\"embabel/embabel-agent\",\"since\":\"2025-11-01T00:00:00Z\",\"until\":\"\"}": {
+  "executionId": "exec_92836143-1125-4cbe-8c02-ef15baf3f5b1",
+  "operationId": "GitHubChangeRequestThroughput",
+  "contractVersion": "1",
+  "status": "SUCCEEDED",
+  "outcome": "OK",
+  "outputType": "rows",
+  "data": [
+   {
+    "period": "2025-11-01",
+    "authorKind": "all",
+    "opened": 53,
+    "merged": 47,
+    "closedUnmerged": 5,
+    "resolved": 52,
+    "mergedPctOfResolved": 90.4,
+    "meanHoursToMerge": 14.7
+   },
+   {
+    "period": "2025-11-01",
+    "authorKind": "human",
+    "opened": 53,
+    "merged": 47,
+    "closedUnmerged": 5,
+    "resolved": 52,
+    "mergedPctOfResolved": 90.4,
+    "meanHoursToMerge": 14.7
+   },
+   {
+    "period": "2025-12-01",
+    "authorKind": "all",
+    "opened": 76,
+    "merged": 68,
+    "closedUnmerged": 8,
+    "resolved": 76,
+    "mergedPctOfResolved": 89.5,
+    "meanHoursToMerge": 14.2
+   },
+   {
+    "period": "2025-12-01",
+    "authorKind": "human",
+    "opened": 76,
+    "merged": 68,
+    "closedUnmerged": 8,
+    "resolved": 76,
+    "mergedPctOfResolved": 89.5,
+    "meanHoursToMerge": 14.2
+   },
+   {
+    "period": "2026-01-01",
+    "authorKind": "all",
+    "opened": 73,
+    "merged": 69,
+    "closedUnmerged": 6,
+    "resolved": 75,
+    "mergedPctOfResolved": 92.0,
+    "meanHoursToMerge": 25.9
+   },
+   {
+    "period": "2026-01-01",
+    "authorKind": "human",
+    "opened": 73,
+    "merged": 69,
+    "closedUnmerged": 6,
+    "resolved": 75,
+    "mergedPctOfResolved": 92.0,
+    "meanHoursToMerge": 25.9
+   },
+   {
+    "period": "2026-02-01",
+    "authorKind": "all",
+    "opened": 63,
+    "merged": 53,
+    "closedUnmerged": 7,
+    "resolved": 60,
+    "mergedPctOfResolved": 88.3,
+    "meanHoursToMerge": 14.7
+   },
+   {
+    "period": "2026-02-01",
+    "authorKind": "human",
+    "opened": 63,
+    "merged": 53,
+    "closedUnmerged": 7,
+    "resolved": 60,
+    "mergedPctOfResolved": 88.3,
+    "meanHoursToMerge": 14.7
+   },
+   {
+    "period": "2026-03-01",
+    "authorKind": "agent",
+    "opened": 2,
+    "merged": 0,
+    "closedUnmerged": 2,
+    "resolved": 2,
+    "mergedPctOfResolved": 0.0,
+    "meanHoursToMerge": null
+   },
+   {
+    "period": "2026-03-01",
+    "authorKind": "all",
+    "opened": 76,
+    "merged": 65,
+    "closedUnmerged": 14,
+    "resolved": 79,
+    "mergedPctOfResolved": 82.3,
+    "meanHoursToMerge": 37.5
+   },
+   {
+    "period": "2026-03-01",
+    "authorKind": "human",
+    "opened": 74,
+    "merged": 65,
+    "closedUnmerged": 12,
+    "resolved": 77,
+    "mergedPctOfResolved": 84.4,
+    "meanHoursToMerge": 37.5
+   },
+   {
+    "period": "2026-04-01",
+    "authorKind": "all",
+    "opened": 51,
+    "merged": 47,
+    "closedUnmerged": 2,
+    "resolved": 49,
+    "mergedPctOfResolved": 95.9,
+    "meanHoursToMerge": 42.0
+   },
+   {
+    "period": "2026-04-01",
+    "authorKind": "assisted",
+    "opened": 1,
+    "merged": 0,
+    "closedUnmerged": 1,
+    "resolved": 1,
+    "mergedPctOfResolved": 0.0,
+    "meanHoursToMerge": null
+   },
+   {
+    "period": "2026-04-01",
+    "authorKind": "human",
+    "opened": 50,
+    "merged": 47,
+    "closedUnmerged": 1,
+    "resolved": 48,
+    "mergedPctOfResolved": 97.9,
+    "meanHoursToMerge": 42.0
+   },
+   {
+    "period": "2026-05-01",
+    "authorKind": "all",
+    "opened": 44,
+    "merged": 31,
+    "closedUnmerged": 9,
+    "resolved": 40,
+    "mergedPctOfResolved": 77.5,
+    "meanHoursToMerge": 64.7
+   },
+   {
+    "period": "2026-05-01",
+    "authorKind": "assisted",
+    "opened": 2,
+    "merged": 0,
+    "closedUnmerged": 1,
+    "resolved": 1,
+    "mergedPctOfResolved": 0.0,
+    "meanHoursToMerge": null
+   },
+   {
+    "period": "2026-05-01",
+    "authorKind": "human",
+    "opened": 42,
+    "merged": 31,
+    "closedUnmerged": 8,
+    "resolved": 39,
+    "mergedPctOfResolved": 79.5,
+    "meanHoursToMerge": 64.7
+   },
+   {
+    "period": "2026-06-01",
+    "authorKind": "all",
+    "opened": 31,
+    "merged": 31,
+    "closedUnmerged": 5,
+    "resolved": 36,
+    "mergedPctOfResolved": 86.1,
+    "meanHoursToMerge": 57.1
+   },
+   {
+    "period": "2026-06-01",
+    "authorKind": "human",
+    "opened": 31,
+    "merged": 31,
+    "closedUnmerged": 5,
+    "resolved": 36,
+    "mergedPctOfResolved": 86.1,
+    "meanHoursToMerge": 57.1
+   },
+   {
+    "period": "2026-07-01",
+    "authorKind": "all",
+    "opened": 58,
+    "merged": 47,
+    "closedUnmerged": 4,
+    "resolved": 51,
+    "mergedPctOfResolved": 92.2,
+    "meanHoursToMerge": 88.3
+   },
+   {
+    "period": "2026-07-01",
+    "authorKind": "assisted",
+    "opened": 1,
+    "merged": 1,
+    "closedUnmerged": 0,
+    "resolved": 1,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 1521.4
+   },
+   {
+    "period": "2026-07-01",
+    "authorKind": "bot",
+    "opened": 1,
+    "merged": 0,
+    "closedUnmerged": 0,
+    "resolved": 0,
+    "mergedPctOfResolved": null,
+    "meanHoursToMerge": null
+   },
+   {
+    "period": "2026-07-01",
+    "authorKind": "human",
+    "opened": 56,
+    "merged": 46,
+    "closedUnmerged": 4,
+    "resolved": 50,
+    "mergedPctOfResolved": 92.0,
+    "meanHoursToMerge": 57.1
+   },
+   {
+    "period": "2026-08-01",
+    "authorKind": "all",
+    "opened": 82,
+    "merged": 69,
+    "closedUnmerged": 12,
+    "resolved": 81,
+    "mergedPctOfResolved": 85.2,
+    "meanHoursToMerge": 54.2
+   },
+   {
+    "period": "2026-08-01",
+    "authorKind": "assisted",
+    "opened": 12,
+    "merged": 11,
+    "closedUnmerged": 1,
+    "resolved": 12,
+    "mergedPctOfResolved": 91.7,
+    "meanHoursToMerge": 19.0
+   },
+   {
+    "period": "2026-08-01",
+    "authorKind": "bot",
+    "opened": 0,
+    "merged": 1,
+    "closedUnmerged": 0,
+    "resolved": 1,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 39.7
+   },
+   {
+    "period": "2026-08-01",
+    "authorKind": "human",
+    "opened": 70,
+    "merged": 57,
+    "closedUnmerged": 11,
+    "resolved": 68,
+    "mergedPctOfResolved": 83.8,
+    "meanHoursToMerge": 61.2
+   },
+   {
+    "period": "2026-09-01",
+    "authorKind": "all",
+    "opened": 57,
+    "merged": 37,
+    "closedUnmerged": 10,
+    "resolved": 47,
+    "mergedPctOfResolved": 78.7,
+    "meanHoursToMerge": 129.9
+   },
+   {
+    "period": "2026-09-01",
+    "authorKind": "assisted",
+    "opened": 2,
+    "merged": 2,
+    "closedUnmerged": 1,
+    "resolved": 3,
+    "mergedPctOfResolved": 66.7,
+    "meanHoursToMerge": 7.2
+   },
+   {
+    "period": "2026-09-01",
+    "authorKind": "human",
+    "opened": 55,
+    "merged": 35,
+    "closedUnmerged": 9,
+    "resolved": 44,
+    "mergedPctOfResolved": 79.5,
+    "meanHoursToMerge": 136.9
+   },
+   {
+    "period": "2026-10-01",
+    "authorKind": "all",
+    "opened": 73,
+    "merged": 54,
+    "closedUnmerged": 5,
+    "resolved": 59,
+    "mergedPctOfResolved": 91.5,
+    "meanHoursToMerge": 176.2
+   },
+   {
+    "period": "2026-10-01",
+    "authorKind": "assisted",
+    "opened": 7,
+    "merged": 5,
+    "closedUnmerged": 0,
+    "resolved": 5,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 124.4
+   },
+   {
+    "period": "2026-10-01",
+    "authorKind": "human",
+    "opened": 66,
+    "merged": 49,
+    "closedUnmerged": 5,
+    "resolved": 54,
+    "mergedPctOfResolved": 90.7,
+    "meanHoursToMerge": 181.5
+   },
+   {
+    "period": "2026-11-01",
+    "authorKind": "all",
+    "opened": 11,
+    "merged": 6,
+    "closedUnmerged": 0,
+    "resolved": 6,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 500.1
+   },
+   {
+    "period": "2026-11-01",
+    "authorKind": "bot",
+    "opened": 1,
+    "merged": 0,
+    "closedUnmerged": 0,
+    "resolved": 0,
+    "mergedPctOfResolved": null,
+    "meanHoursToMerge": null
+   },
+   {
+    "period": "2026-11-01",
+    "authorKind": "human",
+    "opened": 10,
+    "merged": 6,
+    "closedUnmerged": 0,
+    "resolved": 6,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 500.1
+   }
+  ],
+  "warnings": [],
+  "error": null,
+  "columnSources": {
+   "period": "toString(date.truncate('month', datetime(ev.at)))",
+   "authorKind": "UNWIND [pr.authorKind, 'all']",
+   "opened": "sum(CASE ev.event WHEN 'opened' THEN 1 ELSE 0 END)",
+   "merged": "sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END)",
+   "closedUnmerged": "sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END)",
+   "resolved": "(sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) + sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END))",
+   "mergedPctOfResolved": "CASE WHEN (sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) + sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END)) = 0 THEN NULL ELSE round(((100.0 * sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END)) / (sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) + sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END))), 1) END",
+   "meanHoursToMerge": "CASE WHEN avg(CASE WHEN ev.event = 'merged' THEN (duration.inSeconds(datetime(pr.openedAt), datetime(pr.mergedAt)).seconds / 3600.0) ELSE NULL END) IS NULL THEN NULL ELSE round(avg(CASE WHEN ev.event = 'merged' THEN (duration.inSeconds(datetime(pr.openedAt), datetime(pr.mergedAt)).seconds / 3600.0) ELSE NULL END), 1) END"
+  },
+  "metrics": {
+   "durationMs": 12383,
+   "externalCalls": 13,
+   "semanticCalls": 0,
+   "cacheHit": null
+  }
+ },
+ "view:GitHubChangeRequestThroughput:{\"period\":\"quarter\",\"repo\":\"embabel/embabel-agent\",\"since\":\"2025-04-01T00:00:00Z\",\"until\":\"\"}": {
+  "executionId": "exec_5ce5a190-a38f-4dd7-a181-573fb1269322",
+  "operationId": "GitHubChangeRequestThroughput",
+  "contractVersion": "1",
+  "status": "SUCCEEDED",
+  "outcome": "OK",
+  "outputType": "rows",
+  "data": [
+   {
+    "period": "2025-04-01",
+    "authorKind": "all",
+    "opened": 135,
+    "merged": 118,
+    "closedUnmerged": 15,
+    "resolved": 133,
+    "mergedPctOfResolved": 88.7,
+    "meanHoursToMerge": 8.4
+   },
+   {
+    "period": "2025-04-01",
+    "authorKind": "bot",
+    "opened": 4,
+    "merged": 0,
+    "closedUnmerged": 4,
+    "resolved": 4,
+    "mergedPctOfResolved": 0.0,
+    "meanHoursToMerge": null
+   },
+   {
+    "period": "2025-04-01",
+    "authorKind": "human",
+    "opened": 131,
+    "merged": 118,
+    "closedUnmerged": 11,
+    "resolved": 129,
+    "mergedPctOfResolved": 91.5,
+    "meanHoursToMerge": 8.4
+   },
+   {
+    "period": "2025-07-01",
+    "authorKind": "all",
+    "opened": 190,
+    "merged": 149,
+    "closedUnmerged": 39,
+    "resolved": 188,
+    "mergedPctOfResolved": 79.3,
+    "meanHoursToMerge": 20.9
+   },
+   {
+    "period": "2025-07-01",
+    "authorKind": "bot",
+    "opened": 1,
+    "merged": 0,
+    "closedUnmerged": 1,
+    "resolved": 1,
+    "mergedPctOfResolved": 0.0,
+    "meanHoursToMerge": null
+   },
+   {
+    "period": "2025-07-01",
+    "authorKind": "human",
+    "opened": 189,
+    "merged": 149,
+    "closedUnmerged": 38,
+    "resolved": 187,
+    "mergedPctOfResolved": 79.7,
+    "meanHoursToMerge": 20.9
+   },
+   {
+    "period": "2025-10-01",
+    "authorKind": "all",
+    "opened": 175,
+    "merged": 158,
+    "closedUnmerged": 18,
+    "resolved": 176,
+    "mergedPctOfResolved": 89.8,
+    "meanHoursToMerge": 14.3
+   },
+   {
+    "period": "2025-10-01",
+    "authorKind": "human",
+    "opened": 175,
+    "merged": 158,
+    "closedUnmerged": 18,
+    "resolved": 176,
+    "mergedPctOfResolved": 89.8,
+    "meanHoursToMerge": 14.3
+   },
+   {
+    "period": "2026-01-01",
+    "authorKind": "agent",
+    "opened": 2,
+    "merged": 0,
+    "closedUnmerged": 2,
+    "resolved": 2,
+    "mergedPctOfResolved": 0.0,
+    "meanHoursToMerge": null
+   },
+   {
+    "period": "2026-01-01",
+    "authorKind": "all",
+    "opened": 212,
+    "merged": 187,
+    "closedUnmerged": 27,
+    "resolved": 214,
+    "mergedPctOfResolved": 87.4,
+    "meanHoursToMerge": 26.7
+   },
+   {
+    "period": "2026-01-01",
+    "authorKind": "human",
+    "opened": 210,
+    "merged": 187,
+    "closedUnmerged": 25,
+    "resolved": 212,
+    "mergedPctOfResolved": 88.2,
+    "meanHoursToMerge": 26.7
+   },
+   {
+    "period": "2026-04-01",
+    "authorKind": "all",
+    "opened": 126,
+    "merged": 109,
+    "closedUnmerged": 16,
+    "resolved": 125,
+    "mergedPctOfResolved": 87.2,
+    "meanHoursToMerge": 52.8
+   },
+   {
+    "period": "2026-04-01",
+    "authorKind": "assisted",
+    "opened": 3,
+    "merged": 0,
+    "closedUnmerged": 2,
+    "resolved": 2,
+    "mergedPctOfResolved": 0.0,
+    "meanHoursToMerge": null
+   },
+   {
+    "period": "2026-04-01",
+    "authorKind": "human",
+    "opened": 123,
+    "merged": 109,
+    "closedUnmerged": 14,
+    "resolved": 123,
+    "mergedPctOfResolved": 88.6,
+    "meanHoursToMerge": 52.8
+   },
+   {
+    "period": "2026-07-01",
+    "authorKind": "all",
+    "opened": 197,
+    "merged": 153,
+    "closedUnmerged": 26,
+    "resolved": 179,
+    "mergedPctOfResolved": 85.5,
+    "meanHoursToMerge": 82.9
+   },
+   {
+    "period": "2026-07-01",
+    "authorKind": "assisted",
+    "opened": 15,
+    "merged": 14,
+    "closedUnmerged": 2,
+    "resolved": 16,
+    "mergedPctOfResolved": 87.5,
+    "meanHoursToMerge": 124.6
+   },
+   {
+    "period": "2026-07-01",
+    "authorKind": "bot",
+    "opened": 1,
+    "merged": 1,
+    "closedUnmerged": 0,
+    "resolved": 1,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 39.7
+   },
+   {
+    "period": "2026-07-01",
+    "authorKind": "human",
+    "opened": 181,
+    "merged": 138,
+    "closedUnmerged": 24,
+    "resolved": 162,
+    "mergedPctOfResolved": 85.2,
+    "meanHoursToMerge": 79.0
+   },
+   {
+    "period": "2026-10-01",
+    "authorKind": "all",
+    "opened": 84,
+    "merged": 60,
+    "closedUnmerged": 5,
+    "resolved": 65,
+    "mergedPctOfResolved": 92.3,
+    "meanHoursToMerge": 208.6
+   },
+   {
+    "period": "2026-10-01",
+    "authorKind": "assisted",
+    "opened": 7,
+    "merged": 5,
+    "closedUnmerged": 0,
+    "resolved": 5,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 124.4
+   },
+   {
+    "period": "2026-10-01",
+    "authorKind": "bot",
+    "opened": 1,
+    "merged": 0,
+    "closedUnmerged": 0,
+    "resolved": 0,
+    "mergedPctOfResolved": null,
+    "meanHoursToMerge": null
+   },
+   {
+    "period": "2026-10-01",
+    "authorKind": "human",
+    "opened": 76,
+    "merged": 55,
+    "closedUnmerged": 5,
+    "resolved": 60,
+    "mergedPctOfResolved": 91.7,
+    "meanHoursToMerge": 216.2
+   }
+  ],
+  "warnings": [],
+  "error": null,
+  "columnSources": {
+   "period": "toString(date.truncate('quarter', datetime(ev.at)))",
+   "authorKind": "UNWIND [pr.authorKind, 'all']",
+   "opened": "sum(CASE ev.event WHEN 'opened' THEN 1 ELSE 0 END)",
+   "merged": "sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END)",
+   "closedUnmerged": "sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END)",
+   "resolved": "(sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) + sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END))",
+   "mergedPctOfResolved": "CASE WHEN (sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) + sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END)) = 0 THEN NULL ELSE round(((100.0 * sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END)) / (sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) + sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END))), 1) END",
+   "meanHoursToMerge": "CASE WHEN avg(CASE WHEN ev.event = 'merged' THEN (duration.inSeconds(datetime(pr.openedAt), datetime(pr.mergedAt)).seconds / 3600.0) ELSE NULL END) IS NULL THEN NULL ELSE round(avg(CASE WHEN ev.event = 'merged' THEN (duration.inSeconds(datetime(pr.openedAt), datetime(pr.mergedAt)).seconds / 3600.0) ELSE NULL END), 1) END"
+  },
+  "metrics": {
+   "durationMs": 20778,
+   "externalCalls": 21,
+   "semanticCalls": 0,
+   "cacheHit": null
+  }
+ },
+ "view:GitHubChangeRequestThroughput:{\"period\":\"year\",\"repo\":\"embabel/embabel-agent\",\"since\":\"2025-01-01T00:00:00Z\",\"until\":\"\"}": {
+  "executionId": "exec_414d35d7-afce-41bc-80c8-29a16b5de68c",
+  "operationId": "GitHubChangeRequestThroughput",
+  "contractVersion": "1",
+  "status": "SUCCEEDED",
+  "outcome": "OK",
+  "outputType": "rows",
+  "data": [
+   {
+    "period": "2025-01-01",
+    "authorKind": "all",
+    "opened": 500,
+    "merged": 425,
+    "closedUnmerged": 72,
+    "resolved": 497,
+    "mergedPctOfResolved": 85.5,
+    "meanHoursToMerge": 15.0
+   },
+   {
+    "period": "2025-01-01",
+    "authorKind": "bot",
+    "opened": 5,
+    "merged": 0,
+    "closedUnmerged": 5,
+    "resolved": 5,
+    "mergedPctOfResolved": 0.0,
+    "meanHoursToMerge": null
+   },
+   {
+    "period": "2025-01-01",
+    "authorKind": "human",
+    "opened": 495,
+    "merged": 425,
+    "closedUnmerged": 67,
+    "resolved": 492,
+    "mergedPctOfResolved": 86.4,
+    "meanHoursToMerge": 15.0
+   },
+   {
+    "period": "2026-01-01",
+    "authorKind": "agent",
+    "opened": 2,
+    "merged": 0,
+    "closedUnmerged": 2,
+    "resolved": 2,
+    "mergedPctOfResolved": 0.0,
+    "meanHoursToMerge": null
+   },
+   {
+    "period": "2026-01-01",
+    "authorKind": "all",
+    "opened": 619,
+    "merged": 509,
+    "closedUnmerged": 74,
+    "resolved": 583,
+    "mergedPctOfResolved": 87.3,
+    "meanHoursToMerge": 70.6
+   },
+   {
+    "period": "2026-01-01",
+    "authorKind": "assisted",
+    "opened": 25,
+    "merged": 19,
+    "closedUnmerged": 4,
+    "resolved": 23,
+    "mergedPctOfResolved": 82.6,
+    "meanHoursToMerge": 124.6
+   },
+   {
+    "period": "2026-01-01",
+    "authorKind": "bot",
+    "opened": 2,
+    "merged": 1,
+    "closedUnmerged": 0,
+    "resolved": 1,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 39.7
+   },
+   {
+    "period": "2026-01-01",
+    "authorKind": "human",
+    "opened": 590,
+    "merged": 489,
+    "closedUnmerged": 68,
+    "resolved": 557,
+    "mergedPctOfResolved": 87.8,
+    "meanHoursToMerge": 68.6
+   }
+  ],
+  "warnings": [],
+  "error": null,
+  "columnSources": {
+   "period": "toString(date.truncate('year', datetime(ev.at)))",
+   "authorKind": "UNWIND [pr.authorKind, 'all']",
+   "opened": "sum(CASE ev.event WHEN 'opened' THEN 1 ELSE 0 END)",
+   "merged": "sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END)",
+   "closedUnmerged": "sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END)",
+   "resolved": "(sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) + sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END))",
+   "mergedPctOfResolved": "CASE WHEN (sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) + sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END)) = 0 THEN NULL ELSE round(((100.0 * sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END)) / (sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) + sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END))), 1) END",
+   "meanHoursToMerge": "CASE WHEN avg(CASE WHEN ev.event = 'merged' THEN (duration.inSeconds(datetime(pr.openedAt), datetime(pr.mergedAt)).seconds / 3600.0) ELSE NULL END) IS NULL THEN NULL ELSE round(avg(CASE WHEN ev.event = 'merged' THEN (duration.inSeconds(datetime(pr.openedAt), datetime(pr.mergedAt)).seconds / 3600.0) ELSE NULL END), 1) END"
+  },
+  "metrics": {
+   "durationMs": 18417,
+   "externalCalls": 21,
+   "semanticCalls": 0,
+   "cacheHit": null
+  }
+ },
+ "view:GitHubChangeRequestThroughput:{\"period\":\"week\",\"repo\":\"embabel/me\",\"since\":\"2026-08-10T00:00:00Z\",\"until\":\"\"}": {
+  "executionId": "exec_b51e9e40-32d4-449d-9c6d-9bb97d492696",
+  "operationId": "GitHubChangeRequestThroughput",
+  "contractVersion": "1",
+  "status": "SUCCEEDED",
+  "outcome": "OK",
+  "outputType": "rows",
+  "data": [
+   {
+    "period": "2026-08-10",
+    "authorKind": "all",
+    "opened": 68,
+    "merged": 59,
+    "closedUnmerged": 3,
+    "resolved": 62,
+    "mergedPctOfResolved": 95.2,
+    "meanHoursToMerge": 9.7
+   },
+   {
+    "period": "2026-08-10",
+    "authorKind": "assisted",
+    "opened": 58,
+    "merged": 53,
+    "closedUnmerged": 2,
+    "resolved": 55,
+    "mergedPctOfResolved": 96.4,
+    "meanHoursToMerge": 8.6
+   },
+   {
+    "period": "2026-08-10",
+    "authorKind": "human",
+    "opened": 10,
+    "merged": 6,
+    "closedUnmerged": 1,
+    "resolved": 7,
+    "mergedPctOfResolved": 85.7,
+    "meanHoursToMerge": 20.0
+   },
+   {
+    "period": "2026-08-17",
+    "authorKind": "all",
+    "opened": 41,
+    "merged": 39,
+    "closedUnmerged": 3,
+    "resolved": 42,
+    "mergedPctOfResolved": 92.9,
+    "meanHoursToMerge": 28.8
+   },
+   {
+    "period": "2026-08-17",
+    "authorKind": "assisted",
+    "opened": 29,
+    "merged": 26,
+    "closedUnmerged": 2,
+    "resolved": 28,
+    "mergedPctOfResolved": 92.9,
+    "meanHoursToMerge": 26.6
+   },
+   {
+    "period": "2026-08-17",
+    "authorKind": "human",
+    "opened": 12,
+    "merged": 13,
+    "closedUnmerged": 1,
+    "resolved": 14,
+    "mergedPctOfResolved": 92.9,
+    "meanHoursToMerge": 33.3
+   },
+   {
+    "period": "2026-08-24",
+    "authorKind": "all",
+    "opened": 37,
+    "merged": 35,
+    "closedUnmerged": 1,
+    "resolved": 36,
+    "mergedPctOfResolved": 97.2,
+    "meanHoursToMerge": 3.6
+   },
+   {
+    "period": "2026-08-24",
+    "authorKind": "assisted",
+    "opened": 32,
+    "merged": 31,
+    "closedUnmerged": 1,
+    "resolved": 32,
+    "mergedPctOfResolved": 96.9,
+    "meanHoursToMerge": 3.5
+   },
+   {
+    "period": "2026-08-24",
+    "authorKind": "human",
+    "opened": 5,
+    "merged": 4,
+    "closedUnmerged": 0,
+    "resolved": 4,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 3.9
+   },
+   {
+    "period": "2026-08-31",
+    "authorKind": "all",
+    "opened": 83,
+    "merged": 58,
+    "closedUnmerged": 24,
+    "resolved": 82,
+    "mergedPctOfResolved": 70.7,
+    "meanHoursToMerge": 4.6
+   },
+   {
+    "period": "2026-08-31",
+    "authorKind": "assisted",
+    "opened": 49,
+    "merged": 47,
+    "closedUnmerged": 2,
+    "resolved": 49,
+    "mergedPctOfResolved": 95.9,
+    "meanHoursToMerge": 3.2
+   },
+   {
+    "period": "2026-08-31",
+    "authorKind": "human",
+    "opened": 34,
+    "merged": 11,
+    "closedUnmerged": 22,
+    "resolved": 33,
+    "mergedPctOfResolved": 33.3,
+    "meanHoursToMerge": 10.7
+   },
+   {
+    "period": "2026-09-07",
+    "authorKind": "all",
+    "opened": 50,
+    "merged": 43,
+    "closedUnmerged": 4,
+    "resolved": 47,
+    "mergedPctOfResolved": 91.5,
+    "meanHoursToMerge": 10.8
+   },
+   {
+    "period": "2026-09-07",
+    "authorKind": "assisted",
+    "opened": 43,
+    "merged": 36,
+    "closedUnmerged": 4,
+    "resolved": 40,
+    "mergedPctOfResolved": 90.0,
+    "meanHoursToMerge": 8.9
+   },
+   {
+    "period": "2026-09-07",
+    "authorKind": "human",
+    "opened": 7,
+    "merged": 7,
+    "closedUnmerged": 0,
+    "resolved": 7,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 20.2
+   },
+   {
+    "period": "2026-09-14",
+    "authorKind": "all",
+    "opened": 126,
+    "merged": 123,
+    "closedUnmerged": 12,
+    "resolved": 135,
+    "mergedPctOfResolved": 91.1,
+    "meanHoursToMerge": 12.1
+   },
+   {
+    "period": "2026-09-14",
+    "authorKind": "assisted",
+    "opened": 97,
+    "merged": 98,
+    "closedUnmerged": 6,
+    "resolved": 104,
+    "mergedPctOfResolved": 94.2,
+    "meanHoursToMerge": 13.0
+   },
+   {
+    "period": "2026-09-14",
+    "authorKind": "human",
+    "opened": 29,
+    "merged": 25,
+    "closedUnmerged": 6,
+    "resolved": 31,
+    "mergedPctOfResolved": 80.6,
+    "meanHoursToMerge": 8.3
+   },
+   {
+    "period": "2026-09-21",
+    "authorKind": "all",
+    "opened": 189,
+    "merged": 146,
+    "closedUnmerged": 18,
+    "resolved": 164,
+    "mergedPctOfResolved": 89.0,
+    "meanHoursToMerge": 12.0
+   },
+   {
+    "period": "2026-09-21",
+    "authorKind": "assisted",
+    "opened": 57,
+    "merged": 59,
+    "closedUnmerged": 5,
+    "resolved": 64,
+    "mergedPctOfResolved": 92.2,
+    "meanHoursToMerge": 24.9
+   },
+   {
+    "period": "2026-09-21",
+    "authorKind": "human",
+    "opened": 132,
+    "merged": 87,
+    "closedUnmerged": 13,
+    "resolved": 100,
+    "mergedPctOfResolved": 87.0,
+    "meanHoursToMerge": 3.2
+   },
+   {
+    "period": "2026-09-28",
+    "authorKind": "all",
+    "opened": 298,
+    "merged": 280,
+    "closedUnmerged": 39,
+    "resolved": 319,
+    "mergedPctOfResolved": 87.8,
+    "meanHoursToMerge": 10.7
+   },
+   {
+    "period": "2026-09-28",
+    "authorKind": "assisted",
+    "opened": 190,
+    "merged": 189,
+    "closedUnmerged": 1,
+    "resolved": 190,
+    "mergedPctOfResolved": 99.5,
+    "meanHoursToMerge": 4.1
+   },
+   {
+    "period": "2026-09-28",
+    "authorKind": "human",
+    "opened": 108,
+    "merged": 91,
+    "closedUnmerged": 38,
+    "resolved": 129,
+    "mergedPctOfResolved": 70.5,
+    "meanHoursToMerge": 24.5
+   },
+   {
+    "period": "2026-10-05",
+    "authorKind": "all",
+    "opened": 262,
+    "merged": 262,
+    "closedUnmerged": 14,
+    "resolved": 276,
+    "mergedPctOfResolved": 94.9,
+    "meanHoursToMerge": 12.2
+   },
+   {
+    "period": "2026-10-05",
+    "authorKind": "assisted",
+    "opened": 239,
+    "merged": 233,
+    "closedUnmerged": 6,
+    "resolved": 239,
+    "mergedPctOfResolved": 97.5,
+    "meanHoursToMerge": 7.5
+   },
+   {
+    "period": "2026-10-05",
+    "authorKind": "human",
+    "opened": 23,
+    "merged": 29,
+    "closedUnmerged": 8,
+    "resolved": 37,
+    "mergedPctOfResolved": 78.4,
+    "meanHoursToMerge": 50.1
+   },
+   {
+    "period": "2026-10-12",
+    "authorKind": "all",
+    "opened": 209,
+    "merged": 201,
+    "closedUnmerged": 4,
+    "resolved": 205,
+    "mergedPctOfResolved": 98.0,
+    "meanHoursToMerge": 2.7
+   },
+   {
+    "period": "2026-10-12",
+    "authorKind": "assisted",
+    "opened": 205,
+    "merged": 197,
+    "closedUnmerged": 4,
+    "resolved": 201,
+    "mergedPctOfResolved": 98.0,
+    "meanHoursToMerge": 2.4
+   },
+   {
+    "period": "2026-10-12",
+    "authorKind": "human",
+    "opened": 4,
+    "merged": 4,
+    "closedUnmerged": 0,
+    "resolved": 4,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 18.9
+   },
+   {
+    "period": "2026-10-19",
+    "authorKind": "all",
+    "opened": 242,
+    "merged": 224,
+    "closedUnmerged": 4,
+    "resolved": 228,
+    "mergedPctOfResolved": 98.2,
+    "meanHoursToMerge": 4.1
+   },
+   {
+    "period": "2026-10-19",
+    "authorKind": "assisted",
+    "opened": 201,
+    "merged": 198,
+    "closedUnmerged": 2,
+    "resolved": 200,
+    "mergedPctOfResolved": 99.0,
+    "meanHoursToMerge": 2.6
+   },
+   {
+    "period": "2026-10-19",
+    "authorKind": "human",
+    "opened": 41,
+    "merged": 26,
+    "closedUnmerged": 2,
+    "resolved": 28,
+    "mergedPctOfResolved": 92.9,
+    "meanHoursToMerge": 15.4
+   },
+   {
+    "period": "2026-10-26",
+    "authorKind": "all",
+    "opened": 248,
+    "merged": 217,
+    "closedUnmerged": 5,
+    "resolved": 222,
+    "mergedPctOfResolved": 97.7,
+    "meanHoursToMerge": 5.6
+   },
+   {
+    "period": "2026-10-26",
+    "authorKind": "assisted",
+    "opened": 201,
+    "merged": 197,
+    "closedUnmerged": 2,
+    "resolved": 199,
+    "mergedPctOfResolved": 99.0,
+    "meanHoursToMerge": 2.9
+   },
+   {
+    "period": "2026-10-26",
+    "authorKind": "human",
+    "opened": 47,
+    "merged": 20,
+    "closedUnmerged": 3,
+    "resolved": 23,
+    "mergedPctOfResolved": 87.0,
+    "meanHoursToMerge": 32.3
+   },
+   {
+    "period": "2026-11-02",
+    "authorKind": "all",
+    "opened": 64,
+    "merged": 54,
+    "closedUnmerged": 10,
+    "resolved": 64,
+    "mergedPctOfResolved": 84.4,
+    "meanHoursToMerge": 18.6
+   },
+   {
+    "period": "2026-11-02",
+    "authorKind": "assisted",
+    "opened": 54,
+    "merged": 43,
+    "closedUnmerged": 0,
+    "resolved": 43,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 7.9
+   },
+   {
+    "period": "2026-11-02",
+    "authorKind": "human",
+    "opened": 10,
+    "merged": 11,
+    "closedUnmerged": 10,
+    "resolved": 21,
+    "mergedPctOfResolved": 52.4,
+    "meanHoursToMerge": 60.3
+   }
+  ],
+  "warnings": [],
+  "error": null,
+  "columnSources": {
+   "period": "toString(date.truncate('week', datetime(ev.at)))",
+   "authorKind": "UNWIND [pr.authorKind, 'all']",
+   "opened": "sum(CASE ev.event WHEN 'opened' THEN 1 ELSE 0 END)",
+   "merged": "sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END)",
+   "closedUnmerged": "sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END)",
+   "resolved": "(sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) + sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END))",
+   "mergedPctOfResolved": "CASE WHEN (sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) + sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END)) = 0 THEN NULL ELSE round(((100.0 * sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END)) / (sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) + sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END))), 1) END",
+   "meanHoursToMerge": "CASE WHEN avg(CASE WHEN ev.event = 'merged' THEN (duration.inSeconds(datetime(pr.openedAt), datetime(pr.mergedAt)).seconds / 3600.0) ELSE NULL END) IS NULL THEN NULL ELSE round(avg(CASE WHEN ev.event = 'merged' THEN (duration.inSeconds(datetime(pr.openedAt), datetime(pr.mergedAt)).seconds / 3600.0) ELSE NULL END), 1) END"
+  },
+  "metrics": {
+   "durationMs": 25732,
+   "externalCalls": 29,
+   "semanticCalls": 0,
+   "cacheHit": null
+  }
+ },
+ "view:GitHubChangeRequestThroughput:{\"period\":\"month\",\"repo\":\"embabel/me\",\"since\":\"2025-11-01T00:00:00Z\",\"until\":\"\"}": {
+  "executionId": "exec_0c5fbb31-4d5b-44e1-a31d-4f16e742486d",
+  "operationId": "GitHubChangeRequestThroughput",
+  "contractVersion": "1",
+  "status": "SUCCEEDED",
+  "outcome": "OK",
+  "outputType": "rows",
+  "data": [
+   {
+    "period": "2026-03-01",
+    "authorKind": "all",
+    "opened": 11,
+    "merged": 2,
+    "closedUnmerged": 9,
+    "resolved": 11,
+    "mergedPctOfResolved": 18.2,
+    "meanHoursToMerge": 0.0
+   },
+   {
+    "period": "2026-03-01",
+    "authorKind": "assisted",
+    "opened": 1,
+    "merged": 0,
+    "closedUnmerged": 1,
+    "resolved": 1,
+    "mergedPctOfResolved": 0.0,
+    "meanHoursToMerge": null
+   },
+   {
+    "period": "2026-03-01",
+    "authorKind": "human",
+    "opened": 10,
+    "merged": 2,
+    "closedUnmerged": 8,
+    "resolved": 10,
+    "mergedPctOfResolved": 20.0,
+    "meanHoursToMerge": 0.0
+   },
+   {
+    "period": "2026-04-01",
+    "authorKind": "all",
+    "opened": 17,
+    "merged": 11,
+    "closedUnmerged": 5,
+    "resolved": 16,
+    "mergedPctOfResolved": 68.8,
+    "meanHoursToMerge": 2.2
+   },
+   {
+    "period": "2026-04-01",
+    "authorKind": "assisted",
+    "opened": 9,
+    "merged": 4,
+    "closedUnmerged": 5,
+    "resolved": 9,
+    "mergedPctOfResolved": 44.4,
+    "meanHoursToMerge": 6.0
+   },
+   {
+    "period": "2026-04-01",
+    "authorKind": "human",
+    "opened": 8,
+    "merged": 7,
+    "closedUnmerged": 0,
+    "resolved": 7,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 0.0
+   },
+   {
+    "period": "2026-05-01",
+    "authorKind": "all",
+    "opened": 25,
+    "merged": 25,
+    "closedUnmerged": 1,
+    "resolved": 26,
+    "mergedPctOfResolved": 96.2,
+    "meanHoursToMerge": 6.3
+   },
+   {
+    "period": "2026-05-01",
+    "authorKind": "assisted",
+    "opened": 1,
+    "merged": 1,
+    "closedUnmerged": 0,
+    "resolved": 1,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 19.5
+   },
+   {
+    "period": "2026-05-01",
+    "authorKind": "human",
+    "opened": 24,
+    "merged": 24,
+    "closedUnmerged": 1,
+    "resolved": 25,
+    "mergedPctOfResolved": 96.0,
+    "meanHoursToMerge": 5.8
+   },
+   {
+    "period": "2026-06-01",
+    "authorKind": "all",
+    "opened": 29,
+    "merged": 22,
+    "closedUnmerged": 2,
+    "resolved": 24,
+    "mergedPctOfResolved": 91.7,
+    "meanHoursToMerge": 22.6
+   },
+   {
+    "period": "2026-06-01",
+    "authorKind": "human",
+    "opened": 29,
+    "merged": 22,
+    "closedUnmerged": 2,
+    "resolved": 24,
+    "mergedPctOfResolved": 91.7,
+    "meanHoursToMerge": 22.6
+   },
+   {
+    "period": "2026-07-01",
+    "authorKind": "agent",
+    "opened": 1,
+    "merged": 0,
+    "closedUnmerged": 0,
+    "resolved": 0,
+    "mergedPctOfResolved": null,
+    "meanHoursToMerge": null
+   },
+   {
+    "period": "2026-07-01",
+    "authorKind": "all",
+    "opened": 95,
+    "merged": 82,
+    "closedUnmerged": 7,
+    "resolved": 89,
+    "mergedPctOfResolved": 92.1,
+    "meanHoursToMerge": 25.3
+   },
+   {
+    "period": "2026-07-01",
+    "authorKind": "assisted",
+    "opened": 35,
+    "merged": 32,
+    "closedUnmerged": 2,
+    "resolved": 34,
+    "mergedPctOfResolved": 94.1,
+    "meanHoursToMerge": 36.3
+   },
+   {
+    "period": "2026-07-01",
+    "authorKind": "human",
+    "opened": 59,
+    "merged": 50,
+    "closedUnmerged": 5,
+    "resolved": 55,
+    "mergedPctOfResolved": 90.9,
+    "meanHoursToMerge": 18.3
+   },
+   {
+    "period": "2026-08-01",
+    "authorKind": "agent",
+    "opened": 0,
+    "merged": 1,
+    "closedUnmerged": 0,
+    "resolved": 1,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 597.9
+   },
+   {
+    "period": "2026-08-01",
+    "authorKind": "all",
+    "opened": 228,
+    "merged": 206,
+    "closedUnmerged": 12,
+    "resolved": 218,
+    "mergedPctOfResolved": 94.5,
+    "meanHoursToMerge": 15.9
+   },
+   {
+    "period": "2026-08-01",
+    "authorKind": "assisted",
+    "opened": 184,
+    "merged": 163,
+    "closedUnmerged": 9,
+    "resolved": 172,
+    "mergedPctOfResolved": 94.8,
+    "meanHoursToMerge": 9.5
+   },
+   {
+    "period": "2026-08-01",
+    "authorKind": "human",
+    "opened": 44,
+    "merged": 42,
+    "closedUnmerged": 3,
+    "resolved": 45,
+    "mergedPctOfResolved": 93.3,
+    "meanHoursToMerge": 26.8
+   },
+   {
+    "period": "2026-09-01",
+    "authorKind": "all",
+    "opened": 531,
+    "merged": 435,
+    "closedUnmerged": 94,
+    "resolved": 529,
+    "mergedPctOfResolved": 82.2,
+    "meanHoursToMerge": 14.3
+   },
+   {
+    "period": "2026-09-01",
+    "authorKind": "assisted",
+    "opened": 251,
+    "merged": 242,
+    "closedUnmerged": 17,
+    "resolved": 259,
+    "mergedPctOfResolved": 93.4,
+    "meanHoursToMerge": 14.4
+   },
+   {
+    "period": "2026-09-01",
+    "authorKind": "human",
+    "opened": 280,
+    "merged": 193,
+    "closedUnmerged": 77,
+    "resolved": 270,
+    "mergedPctOfResolved": 71.5,
+    "meanHoursToMerge": 14.1
+   },
+   {
+    "period": "2026-10-01",
+    "authorKind": "all",
+    "opened": 1153,
+    "merged": 1079,
+    "closedUnmerged": 30,
+    "resolved": 1109,
+    "mergedPctOfResolved": 97.3,
+    "meanHoursToMerge": 5.6
+   },
+   {
+    "period": "2026-10-01",
+    "authorKind": "assisted",
+    "opened": 1012,
+    "merged": 985,
+    "closedUnmerged": 15,
+    "resolved": 1000,
+    "mergedPctOfResolved": 98.5,
+    "meanHoursToMerge": 3.7
+   },
+   {
+    "period": "2026-10-01",
+    "authorKind": "human",
+    "opened": 141,
+    "merged": 94,
+    "closedUnmerged": 15,
+    "resolved": 109,
+    "mergedPctOfResolved": 86.2,
+    "meanHoursToMerge": 25.5
+   },
+   {
+    "period": "2026-11-01",
+    "authorKind": "all",
+    "opened": 78,
+    "merged": 85,
+    "closedUnmerged": 10,
+    "resolved": 95,
+    "mergedPctOfResolved": 89.5,
+    "meanHoursToMerge": 18.1
+   },
+   {
+    "period": "2026-11-01",
+    "authorKind": "assisted",
+    "opened": 68,
+    "merged": 65,
+    "closedUnmerged": 0,
+    "resolved": 65,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 7.1
+   },
+   {
+    "period": "2026-11-01",
+    "authorKind": "human",
+    "opened": 10,
+    "merged": 20,
+    "closedUnmerged": 10,
+    "resolved": 30,
+    "mergedPctOfResolved": 66.7,
+    "meanHoursToMerge": 53.6
+   }
+  ],
+  "warnings": [],
+  "error": null,
+  "columnSources": {
+   "period": "toString(date.truncate('month', datetime(ev.at)))",
+   "authorKind": "UNWIND [pr.authorKind, 'all']",
+   "opened": "sum(CASE ev.event WHEN 'opened' THEN 1 ELSE 0 END)",
+   "merged": "sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END)",
+   "closedUnmerged": "sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END)",
+   "resolved": "(sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) + sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END))",
+   "mergedPctOfResolved": "CASE WHEN (sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) + sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END)) = 0 THEN NULL ELSE round(((100.0 * sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END)) / (sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) + sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END))), 1) END",
+   "meanHoursToMerge": "CASE WHEN avg(CASE WHEN ev.event = 'merged' THEN (duration.inSeconds(datetime(pr.openedAt), datetime(pr.mergedAt)).seconds / 3600.0) ELSE NULL END) IS NULL THEN NULL ELSE round(avg(CASE WHEN ev.event = 'merged' THEN (duration.inSeconds(datetime(pr.openedAt), datetime(pr.mergedAt)).seconds / 3600.0) ELSE NULL END), 1) END"
+  },
+  "metrics": {
+   "durationMs": 33017,
+   "externalCalls": 36,
+   "semanticCalls": 0,
+   "cacheHit": null
+  }
+ },
+ "view:GitHubChangeRequestThroughput:{\"period\":\"quarter\",\"repo\":\"embabel/me\",\"since\":\"2025-04-01T00:00:00Z\",\"until\":\"\"}": {
+  "executionId": "exec_e04d851a-7008-4680-854b-bc268b931662",
+  "operationId": "GitHubChangeRequestThroughput",
+  "contractVersion": "1",
+  "status": "SUCCEEDED",
+  "outcome": "OK",
+  "outputType": "rows",
+  "data": [
+   {
+    "period": "2026-01-01",
+    "authorKind": "all",
+    "opened": 11,
+    "merged": 2,
+    "closedUnmerged": 9,
+    "resolved": 11,
+    "mergedPctOfResolved": 18.2,
+    "meanHoursToMerge": 0.0
+   },
+   {
+    "period": "2026-01-01",
+    "authorKind": "assisted",
+    "opened": 1,
+    "merged": 0,
+    "closedUnmerged": 1,
+    "resolved": 1,
+    "mergedPctOfResolved": 0.0,
+    "meanHoursToMerge": null
+   },
+   {
+    "period": "2026-01-01",
+    "authorKind": "human",
+    "opened": 10,
+    "merged": 2,
+    "closedUnmerged": 8,
+    "resolved": 10,
+    "mergedPctOfResolved": 20.0,
+    "meanHoursToMerge": 0.0
+   },
+   {
+    "period": "2026-04-01",
+    "authorKind": "all",
+    "opened": 71,
+    "merged": 58,
+    "closedUnmerged": 8,
+    "resolved": 66,
+    "mergedPctOfResolved": 87.9,
+    "meanHoursToMerge": 11.7
+   },
+   {
+    "period": "2026-04-01",
+    "authorKind": "assisted",
+    "opened": 10,
+    "merged": 5,
+    "closedUnmerged": 5,
+    "resolved": 10,
+    "mergedPctOfResolved": 50.0,
+    "meanHoursToMerge": 8.7
+   },
+   {
+    "period": "2026-04-01",
+    "authorKind": "human",
+    "opened": 61,
+    "merged": 53,
+    "closedUnmerged": 3,
+    "resolved": 56,
+    "mergedPctOfResolved": 94.6,
+    "meanHoursToMerge": 12.0
+   },
+   {
+    "period": "2026-07-01",
+    "authorKind": "agent",
+    "opened": 1,
+    "merged": 1,
+    "closedUnmerged": 0,
+    "resolved": 1,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 597.9
+   },
+   {
+    "period": "2026-07-01",
+    "authorKind": "all",
+    "opened": 854,
+    "merged": 723,
+    "closedUnmerged": 113,
+    "resolved": 836,
+    "mergedPctOfResolved": 86.5,
+    "meanHoursToMerge": 16.0
+   },
+   {
+    "period": "2026-07-01",
+    "authorKind": "assisted",
+    "opened": 470,
+    "merged": 437,
+    "closedUnmerged": 28,
+    "resolved": 465,
+    "mergedPctOfResolved": 94.0,
+    "meanHoursToMerge": 14.2
+   },
+   {
+    "period": "2026-07-01",
+    "authorKind": "human",
+    "opened": 383,
+    "merged": 285,
+    "closedUnmerged": 85,
+    "resolved": 370,
+    "mergedPctOfResolved": 77.0,
+    "meanHoursToMerge": 16.7
+   },
+   {
+    "period": "2026-10-01",
+    "authorKind": "all",
+    "opened": 1231,
+    "merged": 1164,
+    "closedUnmerged": 40,
+    "resolved": 1204,
+    "mergedPctOfResolved": 96.7,
+    "meanHoursToMerge": 6.5
+   },
+   {
+    "period": "2026-10-01",
+    "authorKind": "assisted",
+    "opened": 1080,
+    "merged": 1050,
+    "closedUnmerged": 15,
+    "resolved": 1065,
+    "mergedPctOfResolved": 98.6,
+    "meanHoursToMerge": 3.9
+   },
+   {
+    "period": "2026-10-01",
+    "authorKind": "human",
+    "opened": 151,
+    "merged": 114,
+    "closedUnmerged": 25,
+    "resolved": 139,
+    "mergedPctOfResolved": 82.0,
+    "meanHoursToMerge": 30.5
+   }
+  ],
+  "warnings": [],
+  "error": null,
+  "columnSources": {
+   "period": "toString(date.truncate('quarter', datetime(ev.at)))",
+   "authorKind": "UNWIND [pr.authorKind, 'all']",
+   "opened": "sum(CASE ev.event WHEN 'opened' THEN 1 ELSE 0 END)",
+   "merged": "sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END)",
+   "closedUnmerged": "sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END)",
+   "resolved": "(sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) + sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END))",
+   "mergedPctOfResolved": "CASE WHEN (sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) + sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END)) = 0 THEN NULL ELSE round(((100.0 * sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END)) / (sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) + sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END))), 1) END",
+   "meanHoursToMerge": "CASE WHEN avg(CASE WHEN ev.event = 'merged' THEN (duration.inSeconds(datetime(pr.openedAt), datetime(pr.mergedAt)).seconds / 3600.0) ELSE NULL END) IS NULL THEN NULL ELSE round(avg(CASE WHEN ev.event = 'merged' THEN (duration.inSeconds(datetime(pr.openedAt), datetime(pr.mergedAt)).seconds / 3600.0) ELSE NULL END), 1) END"
+  },
+  "metrics": {
+   "durationMs": 40160,
+   "externalCalls": 36,
+   "semanticCalls": 0,
+   "cacheHit": null
+  }
+ },
+ "view:GitHubChangeRequestThroughput:{\"period\":\"year\",\"repo\":\"embabel/me\",\"since\":\"2025-01-01T00:00:00Z\",\"until\":\"\"}": {
+  "executionId": "exec_acc9bbc3-7412-42c1-82ac-e99690f01906",
+  "operationId": "GitHubChangeRequestThroughput",
+  "contractVersion": "1",
+  "status": "SUCCEEDED",
+  "outcome": "OK",
+  "outputType": "rows",
+  "data": [
+   {
+    "period": "2026-01-01",
+    "authorKind": "agent",
+    "opened": 1,
+    "merged": 1,
+    "closedUnmerged": 0,
+    "resolved": 1,
+    "mergedPctOfResolved": 100.0,
+    "meanHoursToMerge": 597.9
+   },
+   {
+    "period": "2026-01-01",
+    "authorKind": "all",
+    "opened": 2167,
+    "merged": 1947,
+    "closedUnmerged": 170,
+    "resolved": 2117,
+    "mergedPctOfResolved": 92.0,
+    "meanHoursToMerge": 10.2
+   },
+   {
+    "period": "2026-01-01",
+    "authorKind": "assisted",
+    "opened": 1561,
+    "merged": 1492,
+    "closedUnmerged": 49,
+    "resolved": 1541,
+    "mergedPctOfResolved": 96.8,
+    "meanHoursToMerge": 6.9
+   },
+   {
+    "period": "2026-01-01",
+    "authorKind": "human",
+    "opened": 605,
+    "merged": 454,
+    "closedUnmerged": 121,
+    "resolved": 575,
+    "mergedPctOfResolved": 79.0,
+    "meanHoursToMerge": 19.5
+   }
+  ],
+  "warnings": [],
+  "error": null,
+  "columnSources": {
+   "period": "toString(date.truncate('year', datetime(ev.at)))",
+   "authorKind": "UNWIND [pr.authorKind, 'all']",
+   "opened": "sum(CASE ev.event WHEN 'opened' THEN 1 ELSE 0 END)",
+   "merged": "sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END)",
+   "closedUnmerged": "sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END)",
+   "resolved": "(sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) + sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END))",
+   "mergedPctOfResolved": "CASE WHEN (sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) + sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END)) = 0 THEN NULL ELSE round(((100.0 * sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END)) / (sum(CASE ev.event WHEN 'merged' THEN 1 ELSE 0 END) + sum(CASE ev.event WHEN 'closed' THEN 1 ELSE 0 END))), 1) END",
+   "meanHoursToMerge": "CASE WHEN avg(CASE WHEN ev.event = 'merged' THEN (duration.inSeconds(datetime(pr.openedAt), datetime(pr.mergedAt)).seconds / 3600.0) ELSE NULL END) IS NULL THEN NULL ELSE round(avg(CASE WHEN ev.event = 'merged' THEN (duration.inSeconds(datetime(pr.openedAt), datetime(pr.mergedAt)).seconds / 3600.0) ELSE NULL END), 1) END"
+  },
+  "metrics": {
+   "durationMs": 32578,
+   "externalCalls": 36,
+   "semanticCalls": 0,
+   "cacheHit": null
+  }
+ }
+}
