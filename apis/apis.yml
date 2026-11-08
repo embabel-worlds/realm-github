@@ -92,6 +92,7 @@
     - repos/get-latest-release
     - repos/get-readme
     - repos/get-content
+    - repos/list-languages    # the language table behind RepositoryLanguages
     # Gists
     - gists/list-for-user
     # Users

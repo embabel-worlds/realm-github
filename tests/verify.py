@@ -75,7 +75,9 @@ def ik(i): return author_kind(i['user']['type'], i['user']['login'], i.get('perf
 def mk(c):
     a = c.get('author') or {}
     return author_kind(a.get('type'), a.get('login'), None, c['commit']['message'], bot_suffix=True)
-TEST_PATH = lambda p: '/test/' in p or '/tests/' in p or '__tests__' in p or p.endswith('.test.ts') or p.endswith('Test.kt') or p.endswith('Test.java') or p.endswith('.spec.js')
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from kind_rule import kind as file_kind     # the vocabulary's FileChange.kind rule, the Python half; the producers compute the Cypher half
+KINDS = ('source', 'test', 'docs', 'build', 'config', 'data', 'other')
 
 issues = gh_pages(f'/repos/{REPO}/issues', {'state': 'all', 'since': SINCE_WIDE}, 10)          # issuesByRepo, since pushed
 comments = gh_pages(f'/repos/{REPO}/issues/comments', {'sort': 'created', 'direction': 'desc', 'since': SINCE_WIDE}, 10)
@@ -121,7 +123,7 @@ sz = collections.defaultdict(list); hot = collections.defaultdict(lambda: {'comm
 hop_commits = [c for c in commits if len(c['parents']) == 1 and in_win(c['commit']['author']['date'], SINCE_HOP)]
 for c in hop_commits:
     files = gh(f'/repos/{REPO}/commits/{c["sha"]}')['files']; kind = mk(c)
-    sz[kind].append((len(files), sum(f['additions'] + f['deletions'] for f in files), sum(1 for f in files if TEST_PATH(f['filename']))))
+    sz[kind].append((len(files), sum(f['additions'] + f['deletions'] for f in files), sum(1 for f in files if file_kind(f['filename']) == 'test')))
     bucket = 'byHumans' if kind == 'human' else 'byAgents' if kind in ('assisted', 'agent') else 'byBots' if kind == 'bot' else None
     for f in files:
         h = hot[f['filename']]; h['commits'] += 1; h['lines'] += f['additions'] + f['deletions']
@@ -130,6 +132,30 @@ L0['commitSize'] = {k: {'commits': len(v), 'meanFiles': rnd(sum(x[0] for x in v)
                         'meanLines': rnd(sum(x[1] for x in v) / len(v)), 'maxLines': max(x[1] for x in v),
                         'commitsTouchingTests': sum(1 for x in v if x[2] > 0)} for k, v in sz.items()}
 L0['hotspots'] = dict(hot)
+
+# GitHubChangeRequestSize / ...ByAuthorKind: the diff of every PR OPENED in the hop window, one call each, each
+# file classified by the same rule the producers compute. The issues read above already covers the window
+# (opened after SINCE_HOP implies updated after SINCE_WIDE).
+cr = {}
+for i in issues:
+    if i.get('pull_request') and in_win(i['created_at'], SINCE_HOP):
+        files = gh_pages(f'/repos/{REPO}/pulls/{i["number"]}/files', {}, 3)
+        row = {'files': len(files), 'additions': sum(f['additions'] for f in files), 'deletions': sum(f['deletions'] for f in files),
+               'status': 'merged' if i['pull_request'].get('merged_at') else i['state'], 'authorKind': ik(i)}
+        for k in KINDS: row[k + 'Files'] = sum(1 for f in files if file_kind(f['filename']) == k)
+        for k in ('source', 'test', 'docs'): row[k + 'Lines'] = sum(f['additions'] + f['deletions'] for f in files if file_kind(f['filename']) == k)
+        cr[i['number']] = row
+L0['crSize'] = cr
+check(0 < len(cr) <= 150, 'L0: the hop window holds between 1 and 150 pull requests (the issue-door CHANGED hop allows 150 anchors)', len(cr))
+langs = gh(f'/repos/{REPO}/languages')
+L0['languages'] = [(k, v, rnd(100.0 * v / sum(langs.values()))) for k, v in sorted(langs.items(), key=lambda kv: (-kv[1], kv[0]))]
+# GitHubCommitAuthors: one row per (login, email) over the non-merge commits of the hop window
+au = collections.defaultdict(lambda: {'commits': 0, 'assistedCommits': 0})
+for c in hop_commits:
+    k = ((c.get('author') or {}).get('login'), c['commit']['author']['email'])
+    au[k]['commits'] += 1
+    if mk(c) == 'assisted': au[k]['assistedCommits'] += 1
+L0['authors'] = {f'{k[0]}/{k[1]}': v for k, v in au.items()}
 L0['hopComments'] = collections.Counter(ik(c) for c in comments if in_win(c['created_at'], SINCE_HOP))
 
 # GitHubChangeRequestThroughput: three dated events per PR, each in the period it happened, each
@@ -205,6 +231,49 @@ keys = [(r['commits'], r['lines']) for r in rows]
 check(all(keys[i] >= keys[i + 1] for i in range(len(keys) - 1)), 'L2: GitHubFileHotspots ordered by commits then lines')
 rows, _ = view('GitHubFileHotspots', dict(HOP, limit=3))
 check(len(rows) == min(3, len(L0['hotspots'])), 'L2: GitHubFileHotspots honours limit')
+
+# Size and shape: every figure per change request, then the aggregate that shares its fetch.
+rows, d = view('GitHubChangeRequestSize', {'repo': REPO, 'since': SINCE_HOP, 'until': UNTIL})
+got = {r['number']: {k: r[k] for k in ('files', 'additions', 'deletions', 'status', 'authorKind') + tuple(k + 'Files' for k in KINDS) + ('sourceLines', 'testLines', 'docsLines')} for r in rows}
+check(got == L0['crSize'], f'L2: GitHubChangeRequestSize every change request ({len(L0["crSize"])}) files, lines, kinds, status == GitHub', f'first drift {next(((n, got.get(n), L0["crSize"].get(n)) for n in sorted(set(got) | set(L0["crSize"])) if got.get(n) != L0["crSize"].get(n)), None)}')
+check(all(r['files'] == sum(r[k + 'Files'] for k in KINDS) for r in rows), 'L2: GitHubChangeRequestSize kinds partition the files')
+check(not any('PARTIAL' in w for w in d.get('warnings') or []), 'L2: GitHubChangeRequestSize is a complete read (no PR over 300 files, window within the anchor cap)')
+rows, d = view('GitHubChangeRequestSizeByAuthorKind', {'repo': REPO, 'since': SINCE_HOP, 'until': UNTIL})
+allrow = next((r for r in rows if r['authorKind'] == 'all'), None); crv = list(L0['crSize'].values())
+if crv:
+    lines = sum(r['additions'] + r['deletions'] for r in crv)
+    want = {'changeRequests': len(crv), 'meanFiles': rnd(sum(r['files'] for r in crv) / len(crv)), 'maxFiles': max(r['files'] for r in crv),
+            'meanLines': rnd(lines / len(crv)), 'maxLines': max(r['additions'] + r['deletions'] for r in crv),
+            'testLinesPct': rnd(100.0 * sum(r['testLines'] for r in crv) / lines) if lines else None,
+            'touchingTests': sum(1 for r in crv if r['testLines'] > 0), 'touchingDocs': sum(1 for r in crv if r['docsLines'] > 0)}
+    check(allrow is not None and {k: allrow[k] for k in want} == want, 'L2: GitHubChangeRequestSizeByAuthorKind all-row == GitHub', f'{allrow} vs {want}')
+    check(collections.Counter(r['authorKind'] for r in crv) == {r['authorKind']: r['changeRequests'] for r in rows if r['authorKind'] != 'all'}, 'L2: GitHubChangeRequestSizeByAuthorKind per-kind counts == GitHub')
+# What the project is: the language table exactly, the profile loud about a source it cannot read.
+rows, d = view('GitHubRepositoryLanguages', {'repo': REPO})
+check([(r['language'], r['bytes'], r['sharePct']) for r in rows] == L0['languages'], 'L2: GitHubRepositoryLanguages every language, bytes and share == GitHub, largest first', f'{rows[:3]} vs {L0["languages"][:3]}')
+rows, d = view('GitHubRepositoryProfile', {'repo': REPO})
+if rows and not d.get('error'):
+    check(len(rows) == 1 and rows[0]['primaryLanguage'] == L0['languages'][0][0] and rows[0]['opinion'], 'L2: GitHubRepositoryProfile one row, primary language == GitHub, an opinion sentence', f'{rows}')
+    check(all(x.split(' ')[0] == L0['languages'][i][0] for i, x in enumerate(rows[0]['languages'])), 'L2: GitHubRepositoryProfile languages in GitHub order', rows[0]['languages'])
+else:
+    # A repository with a deliberately malformed YAML fixture makes the settings read FAIL (embabel/me#3625); until that lands the view is red here and says why.
+    check(False, 'L2: GitHubRepositoryProfile SUCCEEDED (a FAILED/SOURCE_UNAVAILABLE here is embabel/me#3625: one unparsable fixture fails the settings read)', f'error={str(d.get("error"))[:160]} warnings={[w[:120] for w in d.get("warnings") or []][:2]}')
+# Who makes the changes: the per-person counts exactly; the spine is a fact of the world, reported not asserted.
+rows, d = view('GitHubCommitAuthors', {'repo': REPO, 'since': SINCE_HOP, 'until': UNTIL})
+got = {f'{r["login"]}/{r["email"]}': {'commits': r['commits'], 'assistedCommits': r['assistedCommits']} for r in rows}
+check(got == L0['authors'], f'L2: GitHubCommitAuthors every (login, email) commits and assisted commits == GitHub ({len(L0["authors"])} authors)', f'first drift {next(((k, got.get(k), L0["authors"].get(k)) for k in sorted(set(got) | set(L0["authors"])) if got.get(k) != L0["authors"].get(k)), None)}')
+check(all((r['personStatus'] == 'not a person at a mailbox: no spine') == ('noreply' in r['email'] or 'no-reply' in r['email'] or r['email'] == '' or 'bot' in (r['authorKinds'] or []) or 'agent' in (r['authorKinds'] or [])) for r in rows), 'L2: GitHubCommitAuthors keeps bots, agents and no-reply addresses off the spine and nobody else', [(r['login'], r['personStatus']) for r in rows if 'noreply' in r['email']][:3])
+print('L2: GitHubCommitAuthors spine:', collections.Counter(r['personStatus'] for r in rows), '(on the spine needs a child-label read until embabel/me#3621 ships)')
+# What a change concerns: the population is a fact and is reconciled; the concern is a model's opinion and only shape-checked.
+CONCERNS = {'feature', 'fix', 'refactor', 'test', 'docs', 'build', 'dependency', 'ci', 'performance', 'security', 'chore'}
+rows, d = view('GitHubChangeRequestConcern', {'repo': REPO, 'since': SINCE_HOP, 'until': UNTIL})
+check(len(rows) == len(L0['crSize']) and {r['number'] for r in rows} == set(L0['crSize']), 'L2: GitHubChangeRequestConcern judges every change request opened in the window once', f'{len(rows)} vs {len(L0["crSize"])}')
+check(all(r['concern'] in CONCERNS for r in rows), 'L2: GitHubChangeRequestConcern concern is one of the eleven', {r['concern'] for r in rows} - CONCERNS)
+check(all(r['status'] == L0['crSize'][r['number']]['status'] for r in rows if r['number'] in L0['crSize']), 'L2: GitHubChangeRequestConcern status == GitHub (merged recognised through the issue door)')
+check(all(isinstance(r['area'], str) and r['area'].strip() for r in rows), 'L2: GitHubChangeRequestConcern area is a non-empty label')
+rows, d = view('GitHubChangeRequestConcernMix', {'repo': REPO, 'since': SINCE_HOP, 'until': UNTIL})
+check(sum(r['changeRequests'] for r in rows) == len(L0['crSize']), 'L2: GitHubChangeRequestConcernMix counts sum to the change requests opened in the window', f'{sum(r["changeRequests"] for r in rows)} vs {len(L0["crSize"])}')
+check({r['authorKind']: 0 for r in rows}.keys() <= set(collections.Counter(v['authorKind'] for v in L0['crSize'].values())), 'L2: GitHubChangeRequestConcernMix author kinds are the window\'s')
 
 # The judged views: the population is a fact and is reconciled; the judgment is a model's opinion and is only shape-checked.
 rows, d = view('GitHubCommentReadsAs', HOP)

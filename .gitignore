@@ -8,3 +8,4 @@ dist/
 # Playwright output for the Ship rate harness (npm run test:app)
 test-results/
 playwright-report/
+__pycache__/

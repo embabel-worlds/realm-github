@@ -95,3 +95,44 @@
   expect: { matchesView: { name: GitHubChangeRequestThroughput, column: opened, where: { authorKind: human }, args: { period: month, since: "{sinceWide}", until: "{until}" } } }
 - question: "how many PRs were closed without being merged in {repo} since {sinceWideDay}"
   expect: { matchesView: { name: GitHubChangeRequestThroughput, column: closedUnmerged, sum: true, where: { authorKind: all }, args: { period: year, since: "{sinceWide}", until: "{until}" } } }
+
+# Size and shape — GitHubChangeRequestSize and its aggregate. Files and lines per change request, split by
+# the vocabulary's file kind (source, test, docs, build, config, data, other) and the languages touched.
+- question: "how many files did each pull request opened in {repo} since {sinceHopDay} change"
+  expect: { matchesView: { name: GitHubChangeRequestSize, column: files, sum: true, args: { since: "{sinceHop}", until: "{until}" } } }
+- question: "what was the largest pull request in {repo} since {sinceHopDay}, by files changed"
+  expect: { matchesView: { name: GitHubChangeRequestSize, column: files, args: { since: "{sinceHop}", until: "{until}" } } }
+- question: "how many lines of tests were added or removed by pull requests opened in {repo} since {sinceHopDay}"
+  expect: { matchesView: { name: GitHubChangeRequestSize, column: testLines, sum: true, args: { since: "{sinceHop}", until: "{until}" } } }
+- question: "mean files changed per pull request in {repo} since {sinceHopDay}, by author kind"
+  expect: { matchesView: { name: GitHubChangeRequestSizeByAuthorKind, column: meanFiles, where: { authorKind: all }, args: { since: "{sinceHop}", until: "{until}" } } }
+- question: "what share of the lines changed by agent and assisted PRs in {repo} since {sinceHopDay} were tests"
+  expect: { nonEmpty: true }
+- question: "which languages did the pull requests in {repo} touch since {sinceHopDay}"
+  expect: { nonEmpty: true }
+
+# What the project is — GitHubRepositoryLanguages and GitHubRepositoryProfile.
+- question: "what languages is {repo} written in"
+  expect: { matchesView: { name: GitHubRepositoryLanguages, column: sharePct, args: {} } }
+- question: "what percentage of {repo} is Kotlin"
+  expect: { matchesView: { name: GitHubRepositoryLanguages, column: sharePct, where: { language: Kotlin }, args: {} } }
+- question: "what kind of project is {repo}, Spring Boot or Node"
+  expect: { nonEmpty: true }
+- question: "what build tool does {repo} use"
+  expect: { nonEmpty: true }
+
+# Who makes the changes — GitHubCommitAuthors, and what the world holds about them.
+- question: "who committed to {repo} since {sinceHopDay}, and how many commits each"
+  expect: { matchesView: { name: GitHubCommitAuthors, column: commits, sum: true, args: { since: "{sinceHop}", until: "{until}" } } }
+- question: "what do we know about the people committing to {repo} since {sinceHopDay}"
+  expect: { nonEmpty: true }
+- question: "which committers to {repo} are also in our CRM"
+  expect: { minRows: 0 }   # honestly empty until a CRM realm shares the spine
+
+# What a change concerns — judged by a model; the population is checked, the label is an opinion.
+- question: "what were the pull requests opened in {repo} since {sinceHopDay} about"
+  expect: { nonEmpty: true }
+- question: "how many of the pull requests opened in {repo} since {sinceHopDay} were bug fixes"
+  expect: { matchesView: { name: GitHubChangeRequestConcernMix, column: changeRequests, sum: true, where: { concern: fix }, args: { since: "{sinceHop}", until: "{until}" } } }
+- question: "which parts of the system did the agents' pull requests in {repo} touch since {sinceHopDay}"
+  expect: { minRows: 0 }

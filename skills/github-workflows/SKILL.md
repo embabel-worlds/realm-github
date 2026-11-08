@@ -28,6 +28,12 @@ week / this month / this quarter / this year, and how much of the volume was peo
 `GitHubChangeRequestThroughput` with `period: week|month|quarter|year` and a `since` on the period's first
 day (its rate is merged ÷ resolved; the page `apps/ship-rate.html` shows it for repositories side by side); and for "does this comment read as
 written by a person or a machine" `GitHubCommentReadsAs` or the agreement matrix `GitHubCommentProvenance`.
+"How big are the PRs, how much of each was tests or docs, what languages did they touch" is
+`GitHubChangeRequestSize` (per PR) and `GitHubChangeRequestSizeByAuthorKind`; "what were the PRs about, how
+many were fixes, which area did the agents work on" is the judged `GitHubChangeRequestConcern` and its matrix
+`GitHubChangeRequestConcernMix`; "what languages is the repo in, is it Spring Boot or Node, what build tool"
+is `GitHubRepositoryLanguages` and `GitHubRepositoryProfile`; "who is committing and what do we know about
+them" is `GitHubCommitAuthors`, which reads the world's Person spine beside the commits.
 Every view takes `since` (pushed to GitHub) and `until` (applied in the graph); every figure they return
 was reconciled against GitHub's API by `tests/verify.sh`. "Who breaks the build" is the Actions realm's
 `ActionsBreakageByAuthorKind`. A free-text question that does not say "github" may be routed to no realm by
