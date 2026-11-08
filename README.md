@@ -86,7 +86,7 @@ is a complete read, not the newest 1,000 — GitHub's `pulls/list` takes no `sin
 
 ### The views, and the queries behind them
 
-Eight saved views answer the questions the vocabulary exists for (`views/vocabulary.yml`); each
+Fifteen saved views answer the questions the vocabulary exists for (`views/vocabulary.yml`); each
 takes `repo`, a `since` GitHub applies itself and an `until` the graph applies, and every figure
 below was reconciled to the row against GitHub's REST API by `tests/verify.sh`:
 
@@ -98,6 +98,13 @@ below was reconciled to the row against GitHub's REST API by `tests/verify.sh`:
 | `GitHubReviewBurden` | reviews and line comments per PR by the PR author's kind, for PRs merged in a window | one call per merged PR for reviews, one for line comments |
 | `GitHubCommitSize` | files, lines, test files per commit by authorKind | one call per commit, cached a week |
 | `GitHubFileHotspots` | the paths that change most, and who changes them | the same commits |
+| `GitHubChangeRequestSize` | per PR opened in a window: files, lines, the files and lines per kind (source, test, docs, build, config, data, other), the languages touched | the issue door, then one diff call per PR (cached an hour) |
+| `GitHubChangeRequestSizeByAuthorKind` | mean and largest PR by authorKind, the share of changed lines that are tests and docs | the same diffs |
+| `GitHubChangeRequestConcern` | per PR: a judged concern (fix, feature, refactor, dependency…) and the area or technology it is about | the issue door, one batched model call per dimension |
+| `GitHubChangeRequestConcernMix` | the concern × authorKind matrix | the same |
+| `GitHubRepositoryLanguages` | the repository's languages, bytes and share, as GitHub counts them | one call, cached a day |
+| `GitHubRepositoryProfile` | languages, build tools from the root manifests, Spring settings counted, and an opinion sentence built from those facts by rule | the language table plus realm-java-project's files and settings |
+| `GitHubCommitAuthors` | per committer: commits, kinds seen, and what the world knows about the person through its Person spine | the commit door; the spine is read, not fetched |
 | `GitHubCommentReadsAs`, `GitHubCommentProvenance` | what a comment's TEXT reads as (human, machine, unsure) beside what its record declares | one batched model call per window |
 
 On `embabel/embabel-agent` for the 40 days to 7 November 2026: 83 PRs (76 human, 7 assisted,
@@ -163,6 +170,61 @@ comes from the account and the PR description as the vocabulary defines it, not 
 repository where machines write most of the code reads very differently on the same view, and the
 view is the same.
 
+### Size, concern, people and project
+
+Four more questions, each answered against the vocabulary rather than GitHub, so a GitLab or
+Bitbucket child answers them with the same views.
+
+**How big, and of what.** The forge's pull-request list carries no file counts, so size is read
+from the diff: one call per change request, each file carrying the vocabulary's `kind` — source,
+test, docs, build, config, data or other, decided from the path by the ordered rule stated in
+realm-dev-vocabulary's contract and computed identically in both file producers here
+(`tests/kind_rule.py` is the same rule in Python, which is what the battery reconciles against).
+`GitHubChangeRequestSize` gives every change request opened in a window its files, lines, per-kind
+counts and the code languages it touched (read off extensions, lines per language); the aggregate
+splits that by `authorKind`. On `embabel/embabel-agent` for the 54 pull requests opened between 15
+October and 8 November 2026, every figure reconciled to GitHub's diff; 41.7% of the changed lines
+were tests. One thing the battery caught on the way: a stacked pull request and its stack share a
+head commit and so every `blob_url`, and an identity on `blob_url` made the second PR read the
+first's line counts, so a `GitHubFileChange` is now identified by subject and path, as the
+vocabulary defines it.
+
+**What it concerns.** `GitHubChangeRequestConcern` asks a model, from the title, body and labels,
+for one of eleven concerns (feature, fix, refactor, test, docs, build, dependency, ci,
+performance, security, chore) and for the area or technology the change is about, in a few
+words; `GitHubChangeRequestConcernMix` is the matrix by author kind. The population is a fact and
+the battery reconciles it; the labels are an opinion and are only shape-checked. The model reads
+the first 800 characters of each change request; the envelope currently reports that as an
+incomplete result, which it is not (embabel/me#3623).
+
+**Who makes the changes.** A commit carries its author's email, and the vocabulary's
+`authorPersonEmail` keys the world's Person spine for a person at a real mailbox — never a bot, an
+agent or a `users.noreply.github.com` address, so no Person is ever minted for Dependabot. The
+author's name travels onto the Person it mints. `GitHubCommitAuthors` lists each committer with
+what the world holds about them: the canonical name, every address, which sources contributed the
+person and what else is linked to them, so a committer who is also a CRM contact or a helpdesk
+agent is one node. On an appliance holding nothing but this realm, that column is honestly empty.
+Two engine gaps are open around it: a query written against `:Commit` (the vocabulary's label)
+does not yet mint the spine, only one against `:GitHubCommit` does (embabel/me#3621, fix in
+#3622); and a minted Person is reached through the user's `HAS_CONTACT` edge, not yet by a bare
+`(p:Person)` in the same scope (embabel/me#3624), which is the form the view uses.
+
+**What the project is.** `GitHubRepositoryLanguages` is GitHub's own language table (bytes and
+share; `embabel/embabel-agent` is 86.3% Kotlin and 13.3% Java). `GitHubRepositoryProfile` adds,
+where realm-java-project is installed, the build tools read off the manifests at the project
+root, whether it runs GitHub Actions, and a count of `spring.*` settings in its configuration
+(`spring.ai.*` for Spring AI) — so "Spring Boot" is a count, not a guess — and assembles an
+opinion sentence from exactly those facts by rule, not by a model: "A Java project (Java 65.8%,
+Kotlin 26.7%, …) built with Maven, Docker, GitHub Actions; Spring Boot, judging by 142 spring.*
+settings in 8 configuration files, 140 of them Spring AI; 129 files" for
+`embabel/embabel-agent-examples`. On `embabel/embabel-agent` itself the settings read can come back FAILED /
+SOURCE_UNAVAILABLE through the public view endpoint, because the repository carries three
+deliberately malformed YAML test fixtures and the source-tree reader reports a skipped file as a
+failed source (embabel/me#3625); the rows are right when they arrive, and the battery names the
+issue if the view fails. A Node framework named only
+inside `package.json` is not visible to the profile yet, and the opinion says what it saw and no
+more.
+
 ### The app: Ship rate
 
 `apps/ship-rate.html`, served at `/apps/github/ship-rate.html`, is that view as a page: any
@@ -186,8 +248,9 @@ GH_TOKEN=... EMBABEL_TOKEN=... APPLIANCE=http://127.0.0.1:11043 sh tests/verify.
 
 L0 reads GitHub directly for two fixed windows (40 days for the list doors, 18 for the hops,
 both ending two hours ago) and replicates the producers' `authorKind` rule; L1 counts each door
-through the engine; L2 runs all eight views and asserts every count, share, mean and path equal
-to the row (the throughput view by week and by month); L3 asks `tests/questions.yml` through the ask door, reconciling each figure with the
+through the engine; L2 runs all fifteen views and asserts every count, share, mean and path equal
+to the row (the throughput view by week and by month; every change request's files, lines and
+kinds; the language table; each committer's counts); L3 asks `tests/questions.yml` through the ask door, reconciling each figure with the
 view that claims the question and asking the adversarial half three times; L6 forces an unknown
 repository (must be LOUD: `NOT_FOUND` named) and a window in the future (must be an exact
 empty). It exits nonzero on any drift. L5 is `cd tests && npm install && npm run test:app`: Playwright drives

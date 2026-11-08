@@ -454,6 +454,12 @@
       maxFanoutTotal: 5000
       description: "The commits ONE pull request carries, one call per PR."
   properties:
+    authorPersonEmail:
+      hub: Person
+      description: "The vocabulary's Person key: the author's email, lower case, when the author is a person at a real mailbox; empty for a bot, an agent or a users.noreply.github.com address. Restated here with `hub: Person` so the commit keys the world's canonical person."
+    authorName:
+      metadata: { canonical: name }
+      description: "The author's name as the commit records it; copied onto the Person the hub mints, so a person the world first meets through a commit has a name and not just an address."
     sha:
       description: "The commit sha — identity."
       metadata:
@@ -485,12 +491,43 @@
       maxAnchors: 40
       maxFanoutTotal: 4000
       description: "The files ONE pull request changes, as its diff stands now — one call per PR."
+    - anchorLabel: GitHubIssue
+      relationship: CHANGED
+      producerKeyFields: [owner, repo, number]
+      recordKeyField: subjectCallKey
+      producer: filesByPull
+      maxAnchors: 150
+      maxFanoutTotal: 15000
+      description: "The same diff, reached from the ISSUE door: GitHub lists pull requests among a repository's issues, and only that door pushes `updatedAt >= since` to GitHub, so a windowed question (the change requests opened last month, with their files) is exact there where the pull-request door would read the newest thousand. Filter isChangeRequest = true BEFORE this hop; a plain issue has no diff."
   properties:
-    blob_url:
-      description: "The file at the commit on GitHub — identity, since it names both the commit and the path."
+    id:
+      description: "`<subjectKey>!<path>` — the change request or commit this diff entry belongs to, and the file. The identity, because the vocabulary's FileChange is ONE file as ONE subject changed it: two pull requests at the same head commit (a stacked PR and its stack) share every blob_url but not their diffs — the same file has different line counts against different bases — and an identity on blob_url made the second PR read the first PR's counts."
       metadata:
         identity: "true"
+    blob_url: "The file at the commit on GitHub; the same as sourceUrl. Not the identity (see id)."
     subjectCallKey: "`owner/repo/sha` or `owner/repo/number` — the key it was fetched under, and the join link back."
     filename: "GitHub's name for the path; path is the vocabulary's."
     changes: { type: int, description: "additions plus deletions, as GitHub counts it." }
     patch: "The unified diff of this file, when GitHub supplied one (absent for binary and very large files)."
+
+# What a repository is written in, as GitHub's linguist counts it: one node per repository
+# carrying the whole language table, a RepositoryLanguages of the dev vocabulary. Reached from a
+# pinned GitHubRepository by WRITTEN_IN; one call, cached a day. GitHub gives bytes, GitLab gives
+# percentages and Bitbucket one language, which is why the vocabulary carries `unit`.
+- name: GitHubRepositoryLanguages
+  parents: [RepositoryLanguages]
+  visibility: internal
+  userAnchor: false
+  description: "The language table of ONE repository as GitHub counts it: `languages` is a list of 'Name:bytes' entries. Reach it from (:GitHubRepository {full_name:'owner/repo'})-[:WRITTEN_IN]->(l:RepositoryLanguages) and UNWIND l.languages. One call per repository, cached a day."
+  virtualJoins:
+    - anchorLabel: GitHubRepository
+      relationship: WRITTEN_IN
+      keyField: full_name
+      recordKeyField: full_name
+      producer: languagesByRepo
+      description: "(r:GitHubRepository)-[:WRITTEN_IN]->(l:GitHubRepositoryLanguages) = the repository's language table."
+  properties:
+    full_name:
+      description: "owner/repo — identity, since there is one table per repository."
+      metadata:
+        identity: "true"

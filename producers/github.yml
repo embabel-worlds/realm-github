@@ -556,6 +556,7 @@
     authoredAt: commit.author.date
     committedAt: commit.committer.date
     authorLogin: author.login        # null when GitHub could not resolve the author's email to an account
+    authorEmail: commit.author.email # as git recorded it: the one author key every forge carries
     authorType: author.type
     committerLoginRaw: committer.login
     verified: commit.verification.verified
@@ -570,6 +571,7 @@
     coAuthors: "[l IN split(coalesce(r.message, ''), '\\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' | trim(substring(l, 15))]"
     authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR coalesce(r.authorLogin, '') ENDS WITH '[bot]' THEN 'bot' WHEN any(l IN split(coalesce(r.message, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
     committerLogin: "CASE WHEN r.committerLoginRaw IS NULL OR r.committerLoginRaw = r.authorLogin THEN '' ELSE r.committerLoginRaw END"
+    authorPersonEmail: "CASE WHEN coalesce(r.authorEmail, '') <> '' AND (r.authorType IS NULL OR r.authorType = 'User') AND NOT coalesce(r.authorLogin, '') ENDS WITH '[bot]' AND NOT toLower(r.authorEmail) CONTAINS 'noreply' AND NOT toLower(r.authorEmail) CONTAINS 'no-reply' THEN toLower(r.authorEmail) ELSE '' END"   # the value that keys the world's Person: a real mailbox of a person (an unresolved author is still a person, which is exactly when the world may know them); empty for a bot, an agent or a forge no-reply address, so no Person is minted for those
     isMerge: "size(coalesce(r.parents, [])) > 1"
     isRevert: "coalesce(r.message, '') STARTS WITH 'Revert '"
     revertsSha: "coalesce(head([l IN split(coalesce(r.message, ''), '\\n') WHERE l STARTS WITH 'This reverts commit ' | split(substring(l, 20), '.')[0]]), '')"
@@ -592,6 +594,7 @@
     authoredAt: commit.author.date
     committedAt: commit.committer.date
     authorLogin: author.login        # null when GitHub could not resolve the author's email to an account
+    authorEmail: commit.author.email # as git recorded it: the one author key every forge carries
     authorType: author.type
     committerLoginRaw: committer.login
     verified: commit.verification.verified
@@ -606,6 +609,7 @@
     coAuthors: "[l IN split(coalesce(r.message, ''), '\\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' | trim(substring(l, 15))]"
     authorKind: "CASE WHEN r.authorType = 'Bot' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(coalesce(r.authorLogin, '')) CONTAINS a) THEN 'agent' WHEN r.authorType = 'Bot' OR coalesce(r.authorLogin, '') ENDS WITH '[bot]' THEN 'bot' WHEN any(l IN split(coalesce(r.message, ''), '\n') WHERE toLower(l) STARTS WITH 'co-authored-by:' AND any(a IN ['copilot', 'claude', 'devin', 'codex', 'cursor', 'aider', 'jules', 'sweep', 'gemini', 'chatgpt', 'openai'] WHERE toLower(l) CONTAINS a)) THEN 'assisted' WHEN r.authorType = 'User' THEN 'human' ELSE 'unknown' END"
     committerLogin: "CASE WHEN r.committerLoginRaw IS NULL OR r.committerLoginRaw = r.authorLogin THEN '' ELSE r.committerLoginRaw END"
+    authorPersonEmail: "CASE WHEN coalesce(r.authorEmail, '') <> '' AND (r.authorType IS NULL OR r.authorType = 'User') AND NOT coalesce(r.authorLogin, '') ENDS WITH '[bot]' AND NOT toLower(r.authorEmail) CONTAINS 'noreply' AND NOT toLower(r.authorEmail) CONTAINS 'no-reply' THEN toLower(r.authorEmail) ELSE '' END"   # the value that keys the world's Person: a real mailbox of a person (an unresolved author is still a person, which is exactly when the world may know them); empty for a bot, an agent or a forge no-reply address, so no Person is minted for those
     isMerge: "size(coalesce(r.parents, [])) > 1"
     isRevert: "coalesce(r.message, '') STARTS WITH 'Revert '"
     revertsSha: "coalesce(head([l IN split(coalesce(r.message, ''), '\\n') WHERE l STARTS WITH 'This reverts commit ' | split(substring(l, 20), '.')[0]]), '')"
@@ -625,11 +629,13 @@
     repositoryKey: "'github.com/' + toLower(split(r.blob_url, '/')[3] + '/' + split(r.blob_url, '/')[4])"
     subjectKey: "'github.com/' + toLower(split(r.blob_url, '/')[3] + '/' + split(r.blob_url, '/')[4]) + '@' + split(r.blob_url, '/')[6]"
     subjectKind: "'commit'"
+    id: "'github.com/' + toLower(split(r.blob_url, '/')[3] + '/' + split(r.blob_url, '/')[4]) + '@' + split(r.blob_url, '/')[6] + '!' + r.filename"   # subject + path: the identity (see the type)
     path: "r.filename"
     previousPath: "coalesce(r.previous_filename, '')"
     status: "CASE r.status WHEN 'changed' THEN 'modified' WHEN 'unchanged' THEN 'modified' ELSE r.status END"
     changedLines: "[x IN [h IN split(coalesce(r.patch, ''), '\\n') WHERE h STARTS WITH '@@' | split(split(h, '+')[1], ' ')[0]] | CASE WHEN x CONTAINS ',' THEN split(x, ',')[0] + '-' + toString(toInteger(split(x, ',')[0]) + toInteger(split(x, ',')[1]) - 1) ELSE x + '-' + x END]"
     sourceUrl: "r.blob_url"
+    kind: "head([p IN [toLower(r.filename)] | head([c IN [last(split(r.filename, '/'))] | head([f IN [toLower(c)] | head([e IN [CASE WHEN f CONTAINS '.' THEN last(split(f, '.')) ELSE '' END] | CASE WHEN any(x IN ['/test/', '/tests/', '/__tests__/', '/spec/', '/it/', '/testing/', '/testdata/'] WHERE p CONTAINS x) OR any(x IN ['test/', 'tests/', 'spec/', 'testing/', 'testdata/'] WHERE p STARTS WITH x) OR any(x IN ['Test.kt', 'Tests.kt', 'Test.java', 'Tests.java', 'Test.scala', 'Spec.kt', 'Spec.scala', 'Test.cs', 'Tests.cs', 'Test.swift', 'Tests.swift', 'Test.groovy', 'Spec.groovy'] WHERE c ENDS WITH x) OR any(x IN ['.test.ts', '.test.tsx', '.test.js', '.test.jsx', '.test.mjs', '.test.cjs', '.spec.ts', '.spec.tsx', '.spec.js', '.spec.jsx', '.spec.mjs', '_test.go', '_test.py', '_test.rb', '_spec.rb', '_test.exs', '_test.dart'] WHERE f ENDS WITH x) OR (f STARTS WITH 'test_' AND e = 'py') THEN 'test' WHEN e IN ['md', 'mdx', 'adoc', 'asciidoc', 'rst', 'txt'] OR any(x IN ['docs/', 'doc/'] WHERE p STARTS WITH x) OR any(x IN ['/docs/', '/doc/'] WHERE p CONTAINS x) OR f IN ['license', 'notice', 'changelog', 'contributing', 'code_of_conduct', 'authors', 'security', 'codeowners'] OR f STARTS WITH 'readme' OR f STARTS WITH 'license' THEN 'docs' WHEN f IN ['pom.xml', 'build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle.kts', 'gradle.properties', 'mvnw', 'mvnw.cmd', 'gradlew', 'gradlew.bat', 'package.json', 'package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 'pyproject.toml', 'setup.py', 'setup.cfg', 'pipfile', 'pipfile.lock', 'poetry.lock', 'uv.lock', 'go.mod', 'go.sum', 'cargo.toml', 'cargo.lock', 'gemfile', 'gemfile.lock', 'makefile', 'cmakelists.txt', 'jenkinsfile', 'flake.nix', 'flake.lock', '.gitlab-ci.yml', 'bitbucket-pipelines.yml', 'renovate.json', 'build.xml', 'build.sbt', 'project.clj', 'deps.edn', 'mix.exs', 'composer.json', 'composer.lock', 'webpack.config.js', 'vite.config.ts', 'vite.config.js', 'vitest.config.ts', 'vitest.config.mjs', 'jest.config.js', 'jest.config.ts', 'babel.config.js', 'rollup.config.js', 'esbuild.mjs', '.npmrc', '.nvmrc', '.tool-versions', 'sonar-project.properties', '.sonarcloud.properties'] OR any(x IN ['tsconfig', 'dockerfile', 'docker-compose', 'compose.', 'requirements'] WHERE f STARTS WITH x) OR any(x IN ['.csproj', '.fsproj', '.vbproj', '.sln', '.props', '.targets', '.gradle', '.gradle.kts', '.nix', '.lock', '.cmake'] WHERE f ENDS WITH x) OR any(x IN ['.github/', '.gitlab/', '.circleci/', '.buildkite/', '.mvn/', 'gradle/', '.azure-pipelines/', '.devcontainer/'] WHERE p STARTS WITH x) OR p CONTAINS '/.github/' THEN 'build' WHEN e IN ['kt', 'kts', 'java', 'scala', 'groovy', 'clj', 'cljs', 'ts', 'tsx', 'js', 'jsx', 'mjs', 'cjs', 'vue', 'svelte', 'py', 'pyi', 'go', 'rs', 'rb', 'php', 'cs', 'fs', 'vb', 'swift', 'm', 'mm', 'c', 'cc', 'cpp', 'cxx', 'h', 'hpp', 'hh', 'sh', 'bash', 'zsh', 'fish', 'ps1', 'bat', 'cmd', 'sql', 'cypher', 'cql', 'html', 'htm', 'css', 'scss', 'sass', 'less', 'dart', 'lua', 'pl', 'pm', 'r', 'jl', 'ex', 'exs', 'erl', 'hs', 'ml', 'mli', 'elm', 'proto', 'graphql', 'gql', 'tf', 'hcl', 'wasm', 'wat', 'ipynb', 'jinja', 'j2', 'ftl', 'mustache', 'hbs', 'ejs', 'jsp', 'thymeleaf', 'scm', 'lisp', 'el'] THEN 'source' WHEN e IN ['csv', 'tsv', 'parquet', 'avro', 'orc', 'jsonl', 'ndjson', 'xlsx', 'xls', 'sqlite', 'db', 'arrow', 'feather', 'npy'] THEN 'data' WHEN e IN ['yml', 'yaml', 'json', 'json5', 'xml', 'properties', 'toml', 'ini', 'cfg', 'conf', 'env', 'editorconfig', 'gitignore', 'gitattributes', 'dockerignore', 'npmignore', 'prettierrc', 'eslintrc', 'plist', 'service'] OR f STARTS WITH '.' THEN 'config' ELSE 'other' END])])])])"   # the vocabulary's file kind, decided from the path alone (the rule is in realm-dev-vocabulary types/vocabulary.yml); the same expression in both file producers, and in tests/kind_rule.py for the battery
   cost: { bucket: github-core, rate: 5000/hour }
   cache: { kind: ttl, seconds: 604800, negativeTtlSeconds: 3600 }
 
@@ -645,10 +651,31 @@
     repositoryKey: "'github.com/' + toLower(split(r.blob_url, '/')[3] + '/' + split(r.blob_url, '/')[4])"
     subjectKey: "'github.com/' + toLower(split(r.subjectCallKey, '\\u001f')[0] + '/' + split(r.subjectCallKey, '\\u001f')[1]) + '#' + split(r.subjectCallKey, '\\u001f')[2]"   # the composite key reaches compute joined by U+001F
     subjectKind: "'change-request'"
+    id: "'github.com/' + toLower(split(r.subjectCallKey, '\\u001f')[0] + '/' + split(r.subjectCallKey, '\\u001f')[1]) + '#' + split(r.subjectCallKey, '\\u001f')[2] + '!' + r.filename"   # subject + path: the identity, so a stacked PR at the same head as its stack keeps its own counts
     path: "r.filename"
     previousPath: "coalesce(r.previous_filename, '')"
     status: "CASE r.status WHEN 'changed' THEN 'modified' WHEN 'unchanged' THEN 'modified' ELSE r.status END"
     changedLines: "[x IN [h IN split(coalesce(r.patch, ''), '\\n') WHERE h STARTS WITH '@@' | split(split(h, '+')[1], ' ')[0]] | CASE WHEN x CONTAINS ',' THEN split(x, ',')[0] + '-' + toString(toInteger(split(x, ',')[0]) + toInteger(split(x, ',')[1]) - 1) ELSE x + '-' + x END]"
     sourceUrl: "r.blob_url"
+    kind: "head([p IN [toLower(r.filename)] | head([c IN [last(split(r.filename, '/'))] | head([f IN [toLower(c)] | head([e IN [CASE WHEN f CONTAINS '.' THEN last(split(f, '.')) ELSE '' END] | CASE WHEN any(x IN ['/test/', '/tests/', '/__tests__/', '/spec/', '/it/', '/testing/', '/testdata/'] WHERE p CONTAINS x) OR any(x IN ['test/', 'tests/', 'spec/', 'testing/', 'testdata/'] WHERE p STARTS WITH x) OR any(x IN ['Test.kt', 'Tests.kt', 'Test.java', 'Tests.java', 'Test.scala', 'Spec.kt', 'Spec.scala', 'Test.cs', 'Tests.cs', 'Test.swift', 'Tests.swift', 'Test.groovy', 'Spec.groovy'] WHERE c ENDS WITH x) OR any(x IN ['.test.ts', '.test.tsx', '.test.js', '.test.jsx', '.test.mjs', '.test.cjs', '.spec.ts', '.spec.tsx', '.spec.js', '.spec.jsx', '.spec.mjs', '_test.go', '_test.py', '_test.rb', '_spec.rb', '_test.exs', '_test.dart'] WHERE f ENDS WITH x) OR (f STARTS WITH 'test_' AND e = 'py') THEN 'test' WHEN e IN ['md', 'mdx', 'adoc', 'asciidoc', 'rst', 'txt'] OR any(x IN ['docs/', 'doc/'] WHERE p STARTS WITH x) OR any(x IN ['/docs/', '/doc/'] WHERE p CONTAINS x) OR f IN ['license', 'notice', 'changelog', 'contributing', 'code_of_conduct', 'authors', 'security', 'codeowners'] OR f STARTS WITH 'readme' OR f STARTS WITH 'license' THEN 'docs' WHEN f IN ['pom.xml', 'build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle.kts', 'gradle.properties', 'mvnw', 'mvnw.cmd', 'gradlew', 'gradlew.bat', 'package.json', 'package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 'pyproject.toml', 'setup.py', 'setup.cfg', 'pipfile', 'pipfile.lock', 'poetry.lock', 'uv.lock', 'go.mod', 'go.sum', 'cargo.toml', 'cargo.lock', 'gemfile', 'gemfile.lock', 'makefile', 'cmakelists.txt', 'jenkinsfile', 'flake.nix', 'flake.lock', '.gitlab-ci.yml', 'bitbucket-pipelines.yml', 'renovate.json', 'build.xml', 'build.sbt', 'project.clj', 'deps.edn', 'mix.exs', 'composer.json', 'composer.lock', 'webpack.config.js', 'vite.config.ts', 'vite.config.js', 'vitest.config.ts', 'vitest.config.mjs', 'jest.config.js', 'jest.config.ts', 'babel.config.js', 'rollup.config.js', 'esbuild.mjs', '.npmrc', '.nvmrc', '.tool-versions', 'sonar-project.properties', '.sonarcloud.properties'] OR any(x IN ['tsconfig', 'dockerfile', 'docker-compose', 'compose.', 'requirements'] WHERE f STARTS WITH x) OR any(x IN ['.csproj', '.fsproj', '.vbproj', '.sln', '.props', '.targets', '.gradle', '.gradle.kts', '.nix', '.lock', '.cmake'] WHERE f ENDS WITH x) OR any(x IN ['.github/', '.gitlab/', '.circleci/', '.buildkite/', '.mvn/', 'gradle/', '.azure-pipelines/', '.devcontainer/'] WHERE p STARTS WITH x) OR p CONTAINS '/.github/' THEN 'build' WHEN e IN ['kt', 'kts', 'java', 'scala', 'groovy', 'clj', 'cljs', 'ts', 'tsx', 'js', 'jsx', 'mjs', 'cjs', 'vue', 'svelte', 'py', 'pyi', 'go', 'rs', 'rb', 'php', 'cs', 'fs', 'vb', 'swift', 'm', 'mm', 'c', 'cc', 'cpp', 'cxx', 'h', 'hpp', 'hh', 'sh', 'bash', 'zsh', 'fish', 'ps1', 'bat', 'cmd', 'sql', 'cypher', 'cql', 'html', 'htm', 'css', 'scss', 'sass', 'less', 'dart', 'lua', 'pl', 'pm', 'r', 'jl', 'ex', 'exs', 'erl', 'hs', 'ml', 'mli', 'elm', 'proto', 'graphql', 'gql', 'tf', 'hcl', 'wasm', 'wat', 'ipynb', 'jinja', 'j2', 'ftl', 'mustache', 'hbs', 'ejs', 'jsp', 'thymeleaf', 'scm', 'lisp', 'el'] THEN 'source' WHEN e IN ['csv', 'tsv', 'parquet', 'avro', 'orc', 'jsonl', 'ndjson', 'xlsx', 'xls', 'sqlite', 'db', 'arrow', 'feather', 'npy'] THEN 'data' WHEN e IN ['yml', 'yaml', 'json', 'json5', 'xml', 'properties', 'toml', 'ini', 'cfg', 'conf', 'env', 'editorconfig', 'gitignore', 'gitattributes', 'dockerignore', 'npmignore', 'prettierrc', 'eslintrc', 'plist', 'service'] OR f STARTS WITH '.' THEN 'config' ELSE 'other' END])])])])"   # the vocabulary's file kind, decided from the path alone (the rule is in realm-dev-vocabulary types/vocabulary.yml); the same expression in both file producers, and in tests/kind_rule.py for the battery
   cost: { bucket: github-core, rate: 5000/hour }
-  cache: { kind: ttl, seconds: 600, negativeTtlSeconds: 600 }
+  cache: { kind: ttl, seconds: 3600, negativeTtlSeconds: 600 }   # a diff moves while a PR is open, so not a week like a commit's; an hour keeps a size view warm across a session
+
+# The forge's own language table for a repository: bytes of source per language, as GitHub's
+# linguist counts it (vendored and generated files excluded). ONE object per repository —
+# `{"Kotlin": 1234, "Java": 56}` — so the record is the whole map and `compute:` folds it into
+# a list the views UNWIND; there is no array to make one record per language from.
+- name: languagesByRepo
+  kind: remote
+  operation: repos/list-languages    # GET /repos/{owner}/{repo}/languages
+  records: "$"
+  keyArgs: [owner, repo]
+  keySplit: "/"
+  echoKeyAs: full_name
+  maxKeysPerCall: 1
+  compute:                           # the RepositoryLanguages contract; the record is the bare map, so the repository comes from the echoed key
+    repositoryKey: "'github.com/' + toLower(coalesce(r.full_name, ''))"
+    languages: "[k IN keys(r) WHERE NOT k IN ['full_name', 'repositoryKey', 'unit'] | k + ':' + toString(r[k])]"
+    unit: "'bytes'"
+  cost: { bucket: github-core, rate: 5000/hour }
+  cache: { kind: ttl, seconds: 86400, negativeTtlSeconds: 3600 }
