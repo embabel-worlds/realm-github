@@ -147,6 +147,9 @@ for i in issues:
         cr[i['number']] = row
 L0['crSize'] = cr
 check(0 < len(cr) <= 150, 'L0: the hop window holds between 1 and 150 pull requests (the issue-door CHANGED hop allows 150 anchors)', len(cr))
+# The commits each of those PRs carries, one call each: what the issue-door HAS_COMMIT join must return, and the
+# shas a Build's `sha` joins to (realm-github-actions times a pull request's CI through them).
+L0['crCommits'] = {n: sorted(c['sha'] for c in gh_pages(f'/repos/{REPO}/pulls/{n}/commits', {}, 3)) for n in cr}
 langs = gh(f'/repos/{REPO}/languages')
 L0['languages'] = [(k, v, rnd(100.0 * v / sum(langs.values()))) for k, v in sorted(langs.items(), key=lambda kv: (-kv[1], kv[0]))]
 # GitHubCommitAuthors: one row per (login, email) over the non-merge commits of the hop window
@@ -199,6 +202,10 @@ for rel, prefix, ts in (('HAS_COMMENT', 'comment', 'createdAt'), ('HAS_REVIEW_CO
     check(got == l0_kinds(prefix), f'L1: {rel} by authorKind == GitHub', f'{got} vs {l0_kinds(prefix)}')
 rows, d = execute(f"MATCH {pin}-[:HAS_COMMENT]->(c:Comment) WITH c, c.createdAt AS t WHERE t >= '{SINCE_HOP}' AND t < '{UNTIL}' RETURN count(c) AS n, count(DISTINCT c.id) AS ids")
 check(rows and rows[0]['n'] == rows[0]['ids'] == sum(L0['hopComments'].values()), 'L1: comments are one node per GitHub id (no duplicates through the repository door)', f'{rows}')
+rows, d = execute(f"MATCH {pin}-[:HAS_ISSUE]->(pr:Issue) WITH pr, pr.updatedAt AS updatedAt, pr.isChangeRequest AS isPr, pr.openedAt AS openedAt WHERE updatedAt >= '{SINCE_HOP}' AND isPr = true AND openedAt >= '{SINCE_HOP}' AND openedAt < '{UNTIL}' MATCH (pr)-[:HAS_COMMIT]->(c:Commit) RETURN pr.number AS n, collect(c.sha) AS shas")
+got = {r['n']: sorted(r['shas']) for r in rows}
+check(got == L0['crCommits'], 'L1: HAS_COMMIT from the issue door returns every PR of the window with exactly its commits == GitHub', f'{ {n: len(v) for n, v in got.items()} } vs { {n: len(v) for n, v in L0["crCommits"].items()} }')
+check(not any('PARTIAL' in w or 'maxAnchors' in w for w in d.get('warnings') or []), 'L1: the issue-door HAS_COMMIT hop is a complete read within its cap', [w[:100] for w in d.get('warnings') or []])
 
 # ---- L2: every view, closed windows, exact.
 WIDE, HOP = {'repo': REPO, 'since': SINCE_WIDE, 'until': UNTIL}, {'repo': REPO, 'since': SINCE_HOP, 'until': UNTIL}

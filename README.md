@@ -36,6 +36,8 @@ names no vendor, and keeps answering when GitLab or Jira is installed beside Git
    -[:HAS_REVIEW_COMMENT]-> (GitHubComment:Comment)          every comment on a line of a diff
    -[:HAS_COMMIT]->         (GitHubCommit:Commit)            newest first on the default branch; since/until/author pushed down
 (GitHubIssue)        -[:HAS_COMMENT]->        (Comment)     one issue's thread, one call each
+                     -[:HAS_COMMIT]->         (Commit)      a PR's commits through the issue door (the windowed one)
+                     -[:CHANGED]->            (FileChange)  a PR's diff through the issue door
 (GitHubPullRequest)  -[:HAS_COMMENT]->        (Comment)     one PR's conversation
                      -[:HAS_REVIEW_COMMENT]-> (Comment)     one PR's line comments
                      -[:HAS_REVIEW]->         (GitHubReview:Review)
