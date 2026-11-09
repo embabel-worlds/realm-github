@@ -453,6 +453,14 @@
       maxAnchors: 100
       maxFanoutTotal: 5000
       description: "The commits ONE pull request carries, one call per PR."
+    - anchorLabel: GitHubIssue
+      relationship: HAS_COMMIT
+      producerKeyFields: [owner, repo, number]
+      recordKeyField: subjectCallKey
+      producer: commitsByPull
+      maxAnchors: 150
+      maxFanoutTotal: 7500
+      description: "The same commits, reached from the ISSUE door: GitHub lists pull requests among a repository's issues, and only that door pushes `updatedAt >= since` to GitHub, so a windowed question (the change requests opened last month, with the commits they carry and the builds that ran on them) is exact there where the pull-request door would read the newest thousand. Filter isChangeRequest = true BEFORE this hop; a plain issue carries no commits. The shas are what a Build's `sha` joins to, which is how a change request's CI time is found for a fork's PR too, where GitHub links no pull request to the run."
   properties:
     authorPersonEmail:
       hub: Person
