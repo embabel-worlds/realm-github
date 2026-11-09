@@ -16,7 +16,8 @@
 # file parses once per process (mtime-keyed, shared across users). The file holds the
 # operation-ids pinned below plus their $ref closure (435KB). When ADDING an operation
 # id, regenerate it from the official github/rest-api-description spec with
-# embabel.com/assistant scripts/test/trim-openapi.py.
+# embabel.com/assistant scripts/test/trim-openapi.py, which also puts request bodies in the
+# shape the realm host reads (no body on a GET; a write body is one application/json schema).
 - url: "api.github.com.json"
   name: gh
   type: openapi
@@ -51,34 +52,37 @@
       method: GET
       account-id-field: login
       display-name-field: name
+  # Writes are declared as writes. The host reads a listed operation as a GET with no body and
+  # refuses the whole entry when a POST sits among the reads, which is what kept every call of
+  # this realm unapprovable; a write id here is checked against the same vendored document and
+  # destination rules, and the verbs in src/api/issue.ts and src/api/pull-request.ts call
+  # these. add-labels / add-assignees are additive (idempotent per label/assignee), the honest
+  # fit for `issue.addLabels(...)` / `issue.assign(...)`; close/reopen/comment/addLabels/assign
+  # on a pull request reuse the issues/* operations, since a PR IS an issue for state, comments,
+  # labels and assignees.
+  write-operation-ids:
+    - issues/create
+    - issues/update
+    - issues/create-comment
+    - issues/add-labels
+    - issues/add-assignees
+    - pulls/create
+    - pulls/merge
+    - pulls/request-reviewers
   operation-ids:
     # Issues
     - issues/list-for-repo
     - issues/get
-    - issues/create
-    - issues/update
     - issues/list-comments
     - issues/list-comments-for-repo
-    - issues/create-comment
-    # Verb write-backs on a materialized GitHubIssue (src/api/issue.ts):
-    # add-labels / add-assignees are additive (idempotent per label/assignee),
-    # the honest fit for `issue.addLabels(...)` / `issue.assign(...)`.
-    - issues/add-labels
-    - issues/add-assignees
     # Pull requests
     - pulls/list
     - pulls/get
-    - pulls/create
     - pulls/list-files
     - pulls/list-commits
     - pulls/list-reviews
     - pulls/list-review-comments
     - pulls/list-review-comments-for-repo
-    - pulls/merge
-    # Verb write-back on a materialized GitHubPullRequest (src/api/pull-request.ts).
-    # (close/reopen/comment/addLabels/assign reuse the issues/* ops above — a PR
-    # IS an issue for state, comments, labels and assignees.)
-    - pulls/request-reviewers
     # Repositories
     - repos/get
     - repos/list-for-user
