@@ -6,7 +6,7 @@
 #   L2 every view      — the fifteen vocabulary views, closed windows, every figure reconciled to the row
 #   L3 the NL battery  — tests/questions.yml through the ask door, adversarial half x3
 #   L6 forced failures — an unknown repository must be LOUD, an empty window must be quiet
-# Exit nonzero on any drift. L5, the Ship rate page in a headless browser, is `cd tests && npm install && npm run test:app`.
+# Exit nonzero on any drift. The Ship rate page's browser harness (L5) ships with the ship-rate realm.
 #
 #   GH_TOKEN=... EMBABEL_TOKEN=... APPLIANCE=http://127.0.0.1:11043 sh tests/verify.sh [owner/repo]
 # (EMBABEL_AUTH=user:pass is accepted in place of EMBABEL_TOKEN.)
