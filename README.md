@@ -227,18 +227,11 @@ issue if the view fails. A Node framework named only
 inside `package.json` is not visible to the profile yet, and the opinion says what it saw and no
 more.
 
-### The app: Ship rate
+### The page
 
-`apps/ship-rate.html`, served at `/apps/github/ship-rate.html`, is that view as a page: any
-repositories side by side (`embabel/embabel-agent` by default; add one as `owner/repo`), a Week · Month ·
-Quarter · Year control, four tiles for the latest complete period (opened, merged, merge rate,
-machine share, each with its change on the period before), a stacked bar per period of who opened
-what, the merge rate per period as a line, and every number as a table. The current period is
-drawn as "so far". An incomplete read is flagged on its card as lower bounds; an empty window and a
-failed view are two different messages. Its "How it works" link shows the data, the exact Cypher,
-and what an empty card means. The first load of a window is the slow one: GitHub is read a page of
-100 at a time (3 s for `embabel/embabel-agent`'s twelve weeks, half a minute for a year of a
-repository that touches a few thousand issues), and the door caches the read for five minutes.
+The Ship rate page that draws the throughput view lives in its own realm, `ship-rate`, which
+requires this one: this realm is the data and the views, and a page over them is installed
+beside it, not inside it.
 
 ### Verify before anyone asks it anything
 
@@ -255,11 +248,7 @@ to the row (the throughput view by week and by month; every change request's fil
 kinds; the language table; each committer's counts); L3 asks `tests/questions.yml` through the ask door, reconciling each figure with the
 view that claims the question and asking the adversarial half three times; L6 forces an unknown
 repository (must be LOUD: `NOT_FOUND` named) and a window in the future (must be an exact
-empty). It exits nonzero on any drift. L5 is `cd tests && npm install && npm run test:app`: Playwright drives
-`apps/ship-rate.html` headless over envelopes captured from live view runs
-(`tests/fixtures/capture.py` recaptures them), asserting render counts, every control, the forced
-empty, failed and incomplete states, an interaction during a delayed call, the visible badge and
-zero console errors.
+empty). It exits nonzero on any drift. The Ship rate page's browser harness ships with the `ship-rate` realm.
 
 What the ladder found on 7 November 2026, so nobody finds it by falling over it: every L0–L2
 figure reconciles exactly; the natural-language battery is routed to this realm only when a

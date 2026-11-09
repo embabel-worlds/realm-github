@@ -5,7 +5,4 @@ dist/
 # apis/api.github.com.json is TRACKED: a 435KB trimmed vendor (pinned operation-ids
 # + $ref closure), referenced by apis.yml — not the old 12MB runtime download.
 
-# Playwright output for the Ship rate harness (npm run test:app)
-test-results/
-playwright-report/
 __pycache__/
