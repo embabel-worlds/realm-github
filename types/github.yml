@@ -146,7 +146,7 @@
 - name: GitHubRepository
   visibility: internal
   userAnchor: false
-  description: "A GitHub repository. Pin it ONLY as a single literal {full_name:'owner/repo'} (e.g. {full_name:'embabel/me'}) and traverse HAS_ISSUE for its issues, HAS_PULL_REQUEST for its pull requests, HAS_COMMENT and HAS_REVIEW_COMMENT for every comment in it, HAS_COMMIT for its commits — each fetched on demand. Query in the dev vocabulary's words, which every GitHub* record carries beside GitHub's own: an Issue or ChangeRequest has openedAt, closedAt, mergedAt, status (open/closed, and open/merged/closed for a pull request), isChangeRequest and authorKind (human, bot, agent, assisted); a Commit has authoredAt, authorLogin and authorKind; a Comment has createdAt, kind (conversation or review-line) and authorKind; a FileChange has path with its lines added and deleted. GitHub's created_at, state and filename are the raw record, not the vocabulary. For a WINDOW of pull requests ('opened since', 'merged last week') go through HAS_ISSUE with isChangeRequest = true: that door pushes the window to GitHub and is exact, where HAS_PULL_REQUEST reads the newest thousand and reports PARTIAL on a busy repository. Dates are ISO-8601 strings; write a bound as a full timestamp ('2026-10-22T00:00:00Z') so the source applies it. This realm holds no star, fork or watcher counts."
+  description: "A GitHub repository. Pin it ONLY as one literal {full_name:'owner/repo'} and traverse HAS_ISSUE (its issues AND pull requests, told apart by isChangeRequest; the exact door for any window), HAS_PULL_REQUEST (the newest 1000), HAS_COMMENT, HAS_REVIEW_COMMENT and HAS_COMMIT. Query the dev vocabulary's names, carried on every GitHub* record beside GitHub's raw ones: an Issue or ChangeRequest has openedAt, closedAt, mergedAt, status (open/closed; open/merged/closed for a pull request), isChangeRequest and authorKind (human, bot, agent, assisted); a Commit has authoredAt, authorLogin and authorKind; a Comment has createdAt, kind (conversation or review-line) and authorKind; a FileChange has path with its lines added and deleted. GitHub's created_at, state and filename are the raw record, not the vocabulary. Dates are ISO-8601 strings; write a bound as a full timestamp ('2026-10-22T00:00:00Z') so the source applies it. This realm holds no star, fork or watcher counts."
   properties:
     full_name:
       description: "The repository's ONLY identity, e.g. 'embabel/me'. Pin a repo as a SINGLE literal {full_name:'owner/repo'} — there are NO separate name/owner properties to filter on, and a repo is NOT matched via html_url. (The producer splits full_name into owner/repo path params internally.)"
@@ -187,7 +187,7 @@
       keyField: full_name          # owner/repo, split into the op's owner/repo path params
       recordKeyField: full_name    # echoed by issuesByRepo (list-for-repo records omit the repo)
       producer: issuesByRepo
-      description: "ALL issues in the pinned repo (any author). Each issue carries the scalar i.authorLogin — for 'most-frequent / top RAISERS in this repo' GROUP BY i.authorLogin from THIS join; do NOT also join via the RAISED/author path (converging two fetchers on one issue returns 0). Note: these authors are external logins, not your contacts — do NOT map them to Person/Organization."
+      description: "ALL issues AND pull requests in the pinned repo (any author): GitHub lists pull requests among a repository's issues, so i.isChangeRequest = true is a pull request and false a plain issue; filter it, or a count of 'issues' is issues plus PRs. This is THE door for any WINDOW ('opened since', 'merged last week'): it pushes updatedAt >= since to GitHub and is exact, where HAS_PULL_REQUEST reads the newest thousand and reports PARTIAL on a busy repository. The vocabulary's names are the ones to filter on: openedAt, closedAt, mergedAt, status (open/closed, and open/merged/closed for a PR), authorKind (human, bot, agent, assisted); write a date bound as a full ISO timestamp ('2026-09-30T00:00:00Z'). The realm holds no star, fork or watcher counts. Each issue carries the scalar i.authorLogin — for 'most-frequent / top RAISERS in this repo' GROUP BY i.authorLogin from THIS join; do NOT also join via the RAISED/author path (converging two fetchers on one issue returns 0). Note: these authors are external logins, not your contacts — do NOT map them to Person/Organization."
   properties:
     id:
       description: "GitHub issue id — identity of the issue."
@@ -444,7 +444,7 @@
       recordKeyField: full_name
       producer: commitsByRepo
       maxFanoutTotal: 10000
-      description: "The repository's commits on its default branch, newest first, up to 1,000. Filter on projected authoredAt bounds or an authorLogin to push the filter to GitHub."
+      description: "The repository's commits on its default branch, newest first, up to 1,000. Filter on projected authoredAt bounds or an authorLogin to push the filter to GitHub. Count committers by authorLogin, never by authorName: one person signs commits under more than one display name, and the login is the account."
     - anchorLabel: GitHubPullRequest
       relationship: HAS_COMMIT
       producerKeyFields: [owner, repo, number]
