@@ -1,6 +1,6 @@
 # realm-github
 
-GitHub via the official OpenAPI 3 spec — gives the LLM full request **and**
+GitHub via the official OpenAPI 3 spec. It gives the LLM full request **and**
 response types so it doesn't have to guess pagination shape, field names,
 or wrapper-vs-array.
 
@@ -14,10 +14,15 @@ Common failures observed in production traces:
 - `i.user.login` vs `i.author.login` field-name guessing
 - `q` vs `query` argument-name confusion
 
-This realm reads the canonical GitHub OpenAPI 3 spec from
-`github/rest-api-description` and surfaces it via the assistant's
-existing OpenAPI learner. The LLM gets full typed `interfaces.ts`
-including pagination wrappers and response field names.
+This realm carries a vendored, trimmed copy of the canonical GitHub
+OpenAPI 3 spec from `github/rest-api-description` in
+`apis/api.github.com.json`. It holds only the operations `apis/apis.yml`
+lists, plus the schemas they reference. Each write's request body is
+reduced to the subset the host accepts: `type`, `properties`, `required`,
+`items`, `enum` and `description`, with one form chosen for each field
+where GitHub accepts several (label names as strings, a milestone as its
+integer number). The LLM gets full typed `interfaces.ts` including
+pagination wrappers and response field names.
 
 ## The dev vocabulary: who wrote what
 
@@ -264,34 +269,40 @@ nothing else ("which pull requests in owner/repo are open" answers correctly tha
 
 ## Namespace
 
-Methods land under `gateway.gh`. E.g.:
+Methods land under `gateway.gh`, named after GitHub's OpenAPI operationIds.
+A script sees them in its own language's style: camelCase in JavaScript,
+snake_case in Python.
 
-- `gateway.gh.issues_list_for_repo({owner, repo, ...})`
-- `gateway.gh.users_get_by_username({username})`
-- `gateway.gh.search_issues({q})`
-- `gateway.gh.issues_create({owner, repo, title, body})`
+- `gateway.gh.issuesListForRepo({owner, repo, ...})`
+- `gateway.gh.usersGetByUsername({username})`
+- `gateway.gh.searchIssuesAndPullRequests({q})`
 
-See `prompts/examples.md` for usage patterns.
+The realm's own verbs in `src/api/` call the operationId as written, with
+brackets, and put a write's fields under a reserved `body` argument:
+`gh["issues/update"]({owner, repo, issue_number, body: {state: "closed"}})`.
+Every other argument has to be a path or query parameter the operation
+declares. A write is an id listed under `write-operation-ids` in
+`apis/apis.yml`; any other listed operation is a read, which sends no body.
+
+See `skills/github-workflows/SKILL.md` for usage patterns.
 
 ## Auth
 
-GitHub OAuth. Two supported registrations: a classic **OAuth App** (simplest)
-or a **GitHub App** (fine-grained per-repo permissions, rotating tokens).
-Both expose the same user-to-server endpoints, so the setup is identical
-from the assistant's perspective.
+A GitHub token. The API entry declares one credential, `gh`, and the
+world's owner binds a wallet item holding a token to it. On an appliance,
+`GH_TOKEN` fills that item. Reads and writes both go out with that token,
+so anything the realm writes is attributed to the token's owner. Give the
+token only the repositories and permissions the realm should have.
 
-1. Register an app at https://github.com/settings/developers.
-   Callback URL: `http://localhost:8042/api/v1/auth/oauth2/callback`
-   (single route for all providers; state carries the provider id).
-2. In the assistant: open the drawer → Auth → Wallet → Provider
-   credentials. Paste `client_id` and `client_secret` under provider
-   `gh`. Both are encrypted client-side; the server holds no plaintext
-   copy.
-3. Settings → Connected Services → Authorize for GitHub. The access
-   token lands in the wallet under `gh_OAUTH2#${login}`.
+The OAuth declaration is kept as a comment in `apis/apis.yml`. An entry
+uses a token or OAuth, never both, and under OAuth every call is refused
+for a user who has not connected a GitHub account.
 
 ## Tag filter
 
-The full spec is 600+ operations. This realm filters to five high-value
-tags: `issues`, `pulls`, `repos`, `users`, `search`. Edit `apis/apis.yml`
-to add more (e.g. `actions`, `git`, `code-scanning`).
+The full spec is 600+ operations. This realm does not filter by tag; it
+keeps an explicit allowlist in `apis/apis.yml`. Reads go under
+`operation-ids` and writes under `write-operation-ids`, and an id may not
+be in both. To add an operation, add its id to the right list and
+regenerate the vendored spec as the comment at the top of `apis/apis.yml`
+describes.

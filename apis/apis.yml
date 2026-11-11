@@ -6,11 +6,10 @@
 # Instead we pin an explicit operationIds allowlist of the ~15 ops that
 # cover ~95% of common chat tasks. Add more here when a need arises.
 #
-# Auth: GitHub OAuth (OAuth App or GitHub App user-to-server flow).
-# Operator-supplied `client_id` + `client_secret` are stored in the
-# assistant's Wallet under provider name `gh`. Access tokens are
-# persisted under `gh_OAUTH2#${login}` after the user authorizes.
-# See README.md for setup.
+# Auth: a GitHub token. The entry declares one credential, named `gh`, and the owner binds a
+# wallet item holding a token to it; `token-env` names the variable an appliance fills that
+# item from. Reads and writes both go out with that token, so a write is attributed to the
+# token's owner. See README.md for setup.
 # VENDORED, TRIMMED spec (sibling file) — never the remote URL: a remote spec is
 # re-downloaded (12.8MB) per workspace build, per user, serially at boot; the local
 # file parses once per process (mtime-keyed, shared across users). The file holds the
@@ -18,18 +17,20 @@
 # id, regenerate it from the official github/rest-api-description spec with
 # embabel.com/assistant scripts/test/trim-openapi.py, which also puts request bodies in the
 # shape the realm host reads (no body on a GET; a write body is one application/json schema).
+# Then check each write body by hand: pick the one form of each field GitHub accepts that the
+# verbs send, which is label names and assignee logins as strings and a milestone as its integer
+# number. tests/gateway-contract.test.ts checks that the verbs' calls fit the document.
 - url: "api.github.com.json"
   name: gh
   type: openapi
-  # TEST-ONLY (this session): reads under the appliance's GH_TOKEN, as realm-github-actions does, so
-  # verification runs at GitHub's authenticated limit. The shipped declaration is OAuth (commented
-  # out below); which one ships is an open decision recorded in the handover.
   auth: bearer
   token-env: GH_TOKEN
   headers:
     Accept: "application/vnd.github+json"
     X-GitHub-Api-Version: "2022-11-28"
-  # The OAuth declaration that will ship, kept as a comment while reads run under GH_TOKEN.
+  # The OAuth declaration, kept as a comment for a host that should act as each user's own
+  # GitHub account. An entry is token auth or OAuth, never both: switching to `auth: oauth2`
+  # refuses every call, reads included, for a user who has not connected an account.
   # Keep it a comment, never a renamed key: hosts before v0.4.4 reject an entry carrying a
   # field they do not know, which dropped this whole API from the world.
   # oauth2:
