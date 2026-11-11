@@ -22,36 +22,39 @@
   name: gh
   type: openapi
   # TEST-ONLY (this session): reads under the appliance's GH_TOKEN, as realm-github-actions does, so
-  # verification runs at GitHub's authenticated limit. The shipped declaration is OAuth (below); which
-  # one ships is an open decision recorded in the handover.
+  # verification runs at GitHub's authenticated limit. The shipped declaration is OAuth (commented
+  # out below); which one ships is an open decision recorded in the handover.
   auth: bearer
   token-env: GH_TOKEN
   headers:
     Accept: "application/vnd.github+json"
     X-GitHub-Api-Version: "2022-11-28"
-  oauth2-disabled:
-    auth-url: https://github.com/login/oauth/authorize
-    token-url: https://github.com/login/oauth/access_token
-    # Maximum reasonable scope — broad enough for any assistant tool,
-    # narrow enough to exclude genuinely destructive operations.
-    #   repo           : private+public read/write (issues, PRs, contents)
-    #   workflow       : edit .github/workflows/* (needed for CI changes)
-    #   notifications  : read+mark notifications
-    #   read:org       : see org membership for context resolution
-    #   read:user      : authenticated user profile
-    #   user:email     : user's email addresses
-    #   gist           : gists/list-for-user and friends
-    # Explicitly NOT included (add only when needed):
-    #   delete_repo, admin:org, admin:repo_hook, admin:public_key
-    scopes: repo workflow notifications read:org read:user user:email gist
-    # GitHub /user endpoint returns the authenticated user's profile.
-    # `login` is the canonical account id (unique, stable). `name` is
-    # the display label shown in Connected Services.
-    identity:
-      url: https://api.github.com/user
-      method: GET
-      account-id-field: login
-      display-name-field: name
+  # The OAuth declaration that will ship, kept as a comment while reads run under GH_TOKEN.
+  # Keep it a comment, never a renamed key: hosts before v0.4.4 reject an entry carrying a
+  # field they do not know, which dropped this whole API from the world.
+  # oauth2:
+  #   auth-url: https://github.com/login/oauth/authorize
+  #   token-url: https://github.com/login/oauth/access_token
+  #   # Maximum reasonable scope — broad enough for any assistant tool,
+  #   # narrow enough to exclude genuinely destructive operations.
+  #   #   repo           : private+public read/write (issues, PRs, contents)
+  #   #   workflow       : edit .github/workflows/* (needed for CI changes)
+  #   #   notifications  : read+mark notifications
+  #   #   read:org       : see org membership for context resolution
+  #   #   read:user      : authenticated user profile
+  #   #   user:email     : user's email addresses
+  #   #   gist           : gists/list-for-user and friends
+  #   # Explicitly NOT included (add only when needed):
+  #   #   delete_repo, admin:org, admin:repo_hook, admin:public_key
+  #   scopes: repo workflow notifications read:org read:user user:email gist
+  #   # GitHub /user endpoint returns the authenticated user's profile.
+  #   # `login` is the canonical account id (unique, stable). `name` is
+  #   # the display label shown in Connected Services.
+  #   identity:
+  #     url: https://api.github.com/user
+  #     method: GET
+  #     account-id-field: login
+  #     display-name-field: name
   # Writes are declared as writes. The host reads a listed operation as a GET with no body and
   # refuses the whole entry when a POST sits among the reads, which is what kept every call of
   # this realm unapprovable; a write id here is checked against the same vendored document and
