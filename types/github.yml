@@ -496,8 +496,8 @@
       producerKeyFields: [owner, repo, number]
       recordKeyField: subjectCallKey
       producer: filesByPull
-      maxAnchors: 40
-      maxFanoutTotal: 4000
+      maxAnchors: 100
+      maxFanoutTotal: 10000
       description: "The files ONE pull request changes, as its diff stands now — one call per PR."
     - anchorLabel: GitHubIssue
       relationship: CHANGED
