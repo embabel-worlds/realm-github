@@ -229,6 +229,11 @@
     headSha: head.sha
   args:
     state: all
+  # `status = 'open'` is GitHub's own `state=open`, so the open pull requests are one short read
+  # rather than the newest 1,000 filtered in the graph. Only 'open' is sent: 'merged' and 'closed'
+  # are both GitHub's `closed`, so the valuePattern keeps them in the graph, which applies them exactly.
+  pushdown:
+    - { property: status, op: EQUALS, argPath: state, clause: "{value}", valuePattern: '^(open)$' }
   paging: { style: page, size: 100, maxPages: 10 }
   compute:                           # the ChangeRequest contract; `r` is the record plus what project lifted
     key: "'github.com/' + toLower(split(r.html_url, '/')[3] + '/' + split(r.html_url, '/')[4]) + '#' + toString(r.number)"
@@ -646,7 +651,7 @@
   keyArgs: [owner, repo, pull_number]
   echoKeyAs: subjectCallKey
   batchSafe: false
-  paging: { style: page, size: 100, maxPages: 3 }
+  paging: { style: page, size: 100, maxPages: 30 }   # GitHub lists at most 3,000 files of a pull request; a large refactor runs past 300
   compute:                           # the FileChange contract; `r` is one diff entry plus the echoed subjectCallKey
     repositoryKey: "'github.com/' + toLower(split(r.blob_url, '/')[3] + '/' + split(r.blob_url, '/')[4])"
     subjectKey: "'github.com/' + toLower(split(r.subjectCallKey, '\\u001f')[0] + '/' + split(r.subjectCallKey, '\\u001f')[1]) + '#' + split(r.subjectCallKey, '\\u001f')[2]"   # the composite key reaches compute joined by U+001F

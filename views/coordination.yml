@@ -1,0 +1,66 @@
+# Coordination between changes in flight: before an agent (or a person) edits files, which OPEN
+# pull requests already change them. Both views read the repository's open pull requests through
+# the HAS_PULL_REQUEST door, where `status = 'open'` is sent to GitHub as `state=open` (one short
+# read, not the newest 1,000), then each one's diff as it stands now (filesByPull, one call per
+# pull request, cached an hour). A pull request opened or pushed in the last hour may show its
+# previous diff.
+
+- name: OpenPullsTouching
+  description: >-
+    SELECT THIS before editing files in owner/repo: "is anyone else changing these files", "which
+    open pull requests touch X", "will my change conflict". One row per open pull request and file
+    it changes among the paths given (a path ending in / or naming a directory matches every file
+    under it; a file renamed from or to one of them counts, with movedFrom set), with the line ranges
+    that pull request changes, so overlap with your own edit can be judged before either is merged.
+    Leave out your own branch with exceptBranch. A pull request's diff is cached an hour: a push in
+    the last hour may not show yet.
+  params:
+    repo: { type: string, description: "owner/name." }
+    paths: { type: string, description: "Comma-separated repository-relative paths or directories, e.g. 'world-core/src/main/kotlin/com/embabel/world/World.kt,docs/'." }
+    exceptBranch: { type: string, default: "", description: "Your own head branch, left out of the answer." }
+  cypher: |
+    MATCH (r:GitHubRepository {full_name: $repo})-[:HAS_PULL_REQUEST]->(pr:GitHubPullRequest)
+    WHERE pr.status = 'open'
+    WITH pr, pr.headBranch AS branch, [w IN split($paths, ',') WHERE trim(w) <> '' | trim(w)] AS wanted
+    WHERE $exceptBranch = '' OR branch <> $exceptBranch
+    MATCH (pr)-[:CHANGED]->(f:GitHubFileChange)
+    WITH pr, branch, f, f.path AS path, coalesce(f.previousPath, '') AS movedFrom, wanted
+    /* A rename counts under both names: a pull request that moves your file away changes it. */
+    WHERE any(w IN wanted WHERE path = w OR path STARTS WITH (CASE WHEN w ENDS WITH '/' THEN w ELSE w + '/' END)
+                             OR (movedFrom <> '' AND (movedFrom = w OR movedFrom STARTS WITH (CASE WHEN w ENDS WITH '/' THEN w ELSE w + '/' END))))
+    WITH collect({path: path, movedFrom: movedFrom, pull: pr.number, title: pr.title, author: pr.authorLogin, authorKind: pr.authorKind,
+                  branch: branch, change: f.status, theirLines: f.changedLines, updatedAt: pr.updatedAt, url: pr.html_url}) AS hits
+    /* None is an answer, and it says so: one row, rather than an empty result that reads as "could not tell". */
+    UNWIND (CASE WHEN size(hits) = 0 THEN [{path: null, title: 'no open pull request changes these paths'}] ELSE hits END) AS h
+    RETURN h.path AS path, h.movedFrom AS movedFrom, h.pull AS pull, h.title AS title, h.author AS author, h.authorKind AS authorKind,
+           h.branch AS branch, h.change AS change, h.theirLines AS theirLines, h.updatedAt AS updatedAt, h.url AS url
+    ORDER BY path, pull
+
+- name: OpenPullsOverlapping
+  description: >-
+    SELECT THIS for "which open pull requests in owner/repo will conflict with each other", "what
+    should be merged first", "are agents stepping on each other". One row per pair of open pull
+    requests that change the same file, with the files they share — the pairs most likely to
+    conflict at merge, most shared files first. Pull requests that touch only files no other open
+    pull request touches are not listed. Files are compared by their path after the change (a rename
+    is compared under its new name), and each diff is cached an hour.
+  params:
+    repo: { type: string, description: "owner/name." }
+    limit: { type: int, default: 50, description: "Maximum pairs." }
+  cypher: |
+    MATCH (r:GitHubRepository {full_name: $repo})-[:HAS_PULL_REQUEST]->(pr:GitHubPullRequest)
+    WHERE pr.status = 'open'
+    MATCH (pr)-[:CHANGED]->(f:GitHubFileChange)
+    WITH f.path AS path, collect(DISTINCT {number: pr.number, title: pr.title, url: pr.html_url}) AS pulls
+    WHERE size(pulls) > 1
+    UNWIND pulls AS a
+    UNWIND pulls AS b
+    WITH a, b, path WHERE a.number < b.number
+    WITH a, b, collect(path) AS shared
+    WITH collect({first: a.number, firstTitle: a.title, second: b.number, secondTitle: b.title, sharedFiles: size(shared), files: shared[0..10], firstUrl: a.url, secondUrl: b.url}) AS pairs
+    UNWIND pairs AS p
+    WITH p ORDER BY p.sharedFiles DESC, p.first, p.second
+    WITH collect(p) AS ranked
+    UNWIND ranked[0..$limit] AS p
+    RETURN p.first AS first, p.firstTitle AS firstTitle, p.second AS second, p.secondTitle AS secondTitle,
+           p.sharedFiles AS sharedFiles, p.files AS files, p.firstUrl AS firstUrl, p.secondUrl AS secondUrl
