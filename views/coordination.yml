@@ -10,8 +10,10 @@
     SELECT THIS before editing files in owner/repo: "is anyone else changing these files", "which
     open pull requests touch X", "will my change conflict". One row per open pull request and file
     it changes among the paths given (a path ending in / or naming a directory matches every file
-    under it), with the line ranges that pull request changes, so overlap with your own edit can be
-    judged before either is merged. Leave out your own branch with exceptBranch.
+    under it; a file renamed from or to one of them counts, with movedFrom set), with the line ranges
+    that pull request changes, so overlap with your own edit can be judged before either is merged.
+    Leave out your own branch with exceptBranch. A pull request's diff is cached an hour: a push in
+    the last hour may not show yet.
   params:
     repo: { type: string, description: "owner/name." }
     paths: { type: string, description: "Comma-separated repository-relative paths or directories, e.g. 'world-core/src/main/kotlin/com/embabel/world/World.kt,docs/'." }
@@ -22,9 +24,11 @@
     WITH pr, pr.headBranch AS branch, [w IN split($paths, ',') WHERE trim(w) <> '' | trim(w)] AS wanted
     WHERE $exceptBranch = '' OR branch <> $exceptBranch
     MATCH (pr)-[:CHANGED]->(f:GitHubFileChange)
-    WITH pr, branch, f, f.path AS path, wanted
-    WHERE any(w IN wanted WHERE path = w OR path STARTS WITH (CASE WHEN w ENDS WITH '/' THEN w ELSE w + '/' END))
-    RETURN path, pr.number AS pull, pr.title AS title, pr.authorLogin AS author, pr.authorKind AS authorKind,
+    WITH pr, branch, f, f.path AS path, coalesce(f.previousPath, '') AS movedFrom, wanted
+    /* A rename counts under both names: a pull request that moves your file away changes it. */
+    WHERE any(w IN wanted WHERE path = w OR path STARTS WITH (CASE WHEN w ENDS WITH '/' THEN w ELSE w + '/' END)
+                             OR (movedFrom <> '' AND (movedFrom = w OR movedFrom STARTS WITH (CASE WHEN w ENDS WITH '/' THEN w ELSE w + '/' END))))
+    RETURN path, movedFrom, pr.number AS pull, pr.title AS title, pr.authorLogin AS author, pr.authorKind AS authorKind,
            branch, f.status AS change, f.changedLines AS theirLines, pr.updatedAt AS updatedAt, pr.html_url AS url
     ORDER BY path, pull
 
@@ -34,7 +38,8 @@
     should be merged first", "are agents stepping on each other". One row per pair of open pull
     requests that change the same file, with the files they share — the pairs most likely to
     conflict at merge, most shared files first. Pull requests that touch only files no other open
-    pull request touches are not listed.
+    pull request touches are not listed. Files are compared by their path after the change (a rename
+    is compared under its new name), and each diff is cached an hour.
   params:
     repo: { type: string, description: "owner/name." }
     limit: { type: int, default: 50, description: "Maximum pairs." }
