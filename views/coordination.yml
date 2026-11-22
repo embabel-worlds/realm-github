@@ -28,8 +28,12 @@
     /* A rename counts under both names: a pull request that moves your file away changes it. */
     WHERE any(w IN wanted WHERE path = w OR path STARTS WITH (CASE WHEN w ENDS WITH '/' THEN w ELSE w + '/' END)
                              OR (movedFrom <> '' AND (movedFrom = w OR movedFrom STARTS WITH (CASE WHEN w ENDS WITH '/' THEN w ELSE w + '/' END))))
-    RETURN path, movedFrom, pr.number AS pull, pr.title AS title, pr.authorLogin AS author, pr.authorKind AS authorKind,
-           branch, f.status AS change, f.changedLines AS theirLines, pr.updatedAt AS updatedAt, pr.html_url AS url
+    WITH collect({path: path, movedFrom: movedFrom, pull: pr.number, title: pr.title, author: pr.authorLogin, authorKind: pr.authorKind,
+                  branch: branch, change: f.status, theirLines: f.changedLines, updatedAt: pr.updatedAt, url: pr.html_url}) AS hits
+    /* None is an answer, and it says so: one row, rather than an empty result that reads as "could not tell". */
+    UNWIND (CASE WHEN size(hits) = 0 THEN [{path: null, title: 'no open pull request changes these paths'}] ELSE hits END) AS h
+    RETURN h.path AS path, h.movedFrom AS movedFrom, h.pull AS pull, h.title AS title, h.author AS author, h.authorKind AS authorKind,
+           h.branch AS branch, h.change AS change, h.theirLines AS theirLines, h.updatedAt AS updatedAt, h.url AS url
     ORDER BY path, pull
 
 - name: OpenPullsOverlapping
