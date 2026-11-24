@@ -111,15 +111,11 @@
 - question: "which languages did the pull requests in {repo} touch since {sinceHopDay}"
   expect: { nonEmpty: true }
 
-# What the project is — GitHubRepositoryLanguages and GitHubRepositoryProfile.
+# What the project is written in — GitHubRepositoryLanguages.
 - question: "what languages is {repo} written in"
   expect: { matchesView: { name: GitHubRepositoryLanguages, column: sharePct, args: {} } }
 - question: "what percentage of {repo} is Kotlin"
   expect: { matchesView: { name: GitHubRepositoryLanguages, column: sharePct, where: { language: Kotlin }, args: {} } }
-- question: "what kind of project is {repo}, Spring Boot or Node"
-  expect: { nonEmpty: true }
-- question: "what build tool does {repo} use"
-  expect: { nonEmpty: true }
 
 # Who makes the changes — GitHubCommitAuthors, and what the world holds about them.
 - question: "who committed to {repo} since {sinceHopDay}, and how many commits each"

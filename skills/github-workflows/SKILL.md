@@ -32,7 +32,7 @@ written by a person or a machine" `GitHubCommentReadsAs` or the agreement matrix
 `GitHubChangeRequestSize` (per PR) and `GitHubChangeRequestSizeByAuthorKind`; "what were the PRs about, how
 many were fixes, which area did the agents work on" is the judged `GitHubChangeRequestConcern` and its matrix
 `GitHubChangeRequestConcernMix`; "what languages is the repo in, is it Spring Boot or Node, what build tool"
-is `GitHubRepositoryLanguages` and `GitHubRepositoryProfile`; "who is committing and what do we know about
+is `GitHubRepositoryLanguages` here, and realm-java-project's `ProjectProfile` for the build and framework; "who is committing and what do we know about
 them" is `GitHubCommitAuthors`, which reads the world's Person spine beside the commits.
 Every view takes `since` (pushed to GitHub) and `until` (applied in the graph); every figure they return
 was reconciled against GitHub's API by `tests/verify.sh`. "Who breaks the build" is the Actions realm's

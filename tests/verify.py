@@ -255,16 +255,9 @@ if crv:
             'touchingTests': sum(1 for r in crv if r['testLines'] > 0), 'touchingDocs': sum(1 for r in crv if r['docsLines'] > 0)}
     check(allrow is not None and {k: allrow[k] for k in want} == want, 'L2: GitHubChangeRequestSizeByAuthorKind all-row == GitHub', f'{allrow} vs {want}')
     check(collections.Counter(r['authorKind'] for r in crv) == {r['authorKind']: r['changeRequests'] for r in rows if r['authorKind'] != 'all'}, 'L2: GitHubChangeRequestSizeByAuthorKind per-kind counts == GitHub')
-# What the project is: the language table exactly, the profile loud about a source it cannot read.
+# What the project is written in: the language table exactly.
 rows, d = view('GitHubRepositoryLanguages', {'repo': REPO})
 check([(r['language'], r['bytes'], r['sharePct']) for r in rows] == L0['languages'], 'L2: GitHubRepositoryLanguages every language, bytes and share == GitHub, largest first', f'{rows[:3]} vs {L0["languages"][:3]}')
-rows, d = view('GitHubRepositoryProfile', {'repo': REPO})
-if rows and not d.get('error'):
-    check(len(rows) == 1 and rows[0]['primaryLanguage'] == L0['languages'][0][0] and rows[0]['opinion'], 'L2: GitHubRepositoryProfile one row, primary language == GitHub, an opinion sentence', f'{rows}')
-    check(all(x.split(' ')[0] == L0['languages'][i][0] for i, x in enumerate(rows[0]['languages'])), 'L2: GitHubRepositoryProfile languages in GitHub order', rows[0]['languages'])
-else:
-    # A repository with a deliberately malformed YAML fixture makes the settings read FAIL (embabel/me#3625); until that lands the view is red here and says why.
-    check(False, 'L2: GitHubRepositoryProfile SUCCEEDED (a FAILED/SOURCE_UNAVAILABLE here is embabel/me#3625: one unparsable fixture fails the settings read)', f'error={str(d.get("error"))[:160]} warnings={[w[:120] for w in d.get("warnings") or []][:2]}')
 # Who makes the changes: the per-person counts exactly; the spine is a fact of the world, reported not asserted.
 rows, d = view('GitHubCommitAuthors', {'repo': REPO, 'since': SINCE_HOP, 'until': UNTIL})
 got = {f'{r["login"]}/{r["email"]}': {'commits': r['commits'], 'assistedCommits': r['assistedCommits']} for r in rows}

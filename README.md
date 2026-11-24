@@ -105,7 +105,6 @@ below was reconciled to the row against GitHub's REST API by `tests/verify.sh`:
 | `GitHubChangeRequestConcern` | per PR: a judged concern (fix, feature, refactor, dependency…) and the area or technology it is about | the issue door, one batched model call per dimension |
 | `GitHubChangeRequestConcernMix` | the concern × authorKind matrix | the same |
 | `GitHubRepositoryLanguages` | the repository's languages, bytes and share, as GitHub counts them | one call, cached a day |
-| `GitHubRepositoryProfile` | languages, build tools from the root manifests, Spring settings counted, and an opinion sentence built from those facts by rule | the language table plus realm-java-project's files and settings |
 | `GitHubCommitAuthors` | per committer: commits, kinds seen, and what the world knows about the person through its Person spine | the commit door; the spine is read, not fetched |
 | `GitHubCommentReadsAs`, `GitHubCommentProvenance` | what a comment's TEXT reads as (human, machine, unsure) beside what its record declares | one batched model call per window |
 
@@ -212,20 +211,9 @@ does not yet mint the spine, only one against `:GitHubCommit` does (embabel/me#3
 `(p:Person)` in the same scope (embabel/me#3624), which is the form the view uses.
 
 **What the project is.** `GitHubRepositoryLanguages` is GitHub's own language table (bytes and
-share; `embabel/embabel-agent` is 86.3% Kotlin and 13.3% Java). `GitHubRepositoryProfile` adds,
-where realm-java-project is installed, the build tools read off the manifests at the project
-root, whether it runs GitHub Actions, and a count of `spring.*` settings in its configuration
-(`spring.ai.*` for Spring AI) — so "Spring Boot" is a count, not a guess — and assembles an
-opinion sentence from exactly those facts by rule, not by a model: "A Java project (Java 65.8%,
-Kotlin 26.7%, …) built with Maven, Docker, GitHub Actions; Spring Boot, judging by 142 spring.*
-settings in 8 configuration files, 140 of them Spring AI; 129 files" for
-`embabel/embabel-agent-examples`. On `embabel/embabel-agent` itself the settings read can come back FAILED /
-SOURCE_UNAVAILABLE through the public view endpoint, because the repository carries three
-deliberately malformed YAML test fixtures and the source-tree reader reports a skipped file as a
-failed source (embabel/me#3625); the rows are right when they arrive, and the battery names the
-issue if the view fails. A Node framework named only
-inside `package.json` is not visible to the profile yet, and the opinion says what it saw and no
-more.
+share; `embabel/embabel-agent` is 86.3% Kotlin and 13.3% Java). What it is built with — the build tools at the
+root, its settings, its framework — is a question about the code, not the forge: realm-java-project's
+`ProjectProfile` answers it for any repository or folder.
 
 ### The page
 
