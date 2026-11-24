@@ -7,7 +7,7 @@
 
 - name: OpenPullsTouching
   description: >-
-    SELECT THIS before editing files in owner/repo: "is anyone else changing these files", "which
+    Open pull requests that change the given files or directories. SELECT THIS before editing files in owner/repo: "is anyone else changing these files", "which
     open pull requests touch X", "will my change conflict". One row per open pull request and file
     it changes among the paths given (a path ending in / or naming a directory matches every file
     under it; a file renamed from or to one of them counts, with movedFrom set), with the line ranges
@@ -15,8 +15,8 @@
     Leave out your own branch with exceptBranch. A pull request's diff is cached an hour: a push in
     the last hour may not show yet.
   params:
-    repo: { type: string, description: "owner/name." }
-    paths: { type: string, description: "Comma-separated repository-relative paths or directories, e.g. 'world-core/src/main/kotlin/com/embabel/world/World.kt,docs/'." }
+    repo: { type: string, required: true, description: "The repository as owner/name, exactly." }
+    paths: { type: string, required: true, description: "Comma-separated repository-relative paths or directories, e.g. 'world-core/src/main/kotlin/com/embabel/world/World.kt,docs/'." }
     exceptBranch: { type: string, default: "", description: "Your own head branch, left out of the answer." }
   cypher: |
     MATCH (r:GitHubRepository {full_name: $repo})-[:HAS_PULL_REQUEST]->(pr:GitHubPullRequest)
@@ -38,14 +38,14 @@
 
 - name: OpenPullsOverlapping
   description: >-
-    SELECT THIS for "which open pull requests in owner/repo will conflict with each other", "what
+    Pairs of open pull requests that change the same files: likely conflicts. SELECT THIS for "which open pull requests in owner/repo will conflict with each other", "what
     should be merged first", "are agents stepping on each other". One row per pair of open pull
     requests that change the same file, with the files they share — the pairs most likely to
     conflict at merge, most shared files first. Pull requests that touch only files no other open
     pull request touches are not listed. Files are compared by their path after the change (a rename
     is compared under its new name), and each diff is cached an hour.
   params:
-    repo: { type: string, description: "owner/name." }
+    repo: { type: string, required: true, description: "The repository as owner/name, exactly." }
     limit: { type: int, default: 50, description: "Maximum pairs." }
   cypher: |
     MATCH (r:GitHubRepository {full_name: $repo})-[:HAS_PULL_REQUEST]->(pr:GitHubPullRequest)

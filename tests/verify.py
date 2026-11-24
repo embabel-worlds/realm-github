@@ -369,5 +369,20 @@ check(not rows and not d.get('error') and not any('PARTIAL' in w for w in d.get(
 rows, d = view('GitHubCommitSize', {'repo': REPO, 'since': 'last week'})
 check(not rows and not any('PRODUCER_ERROR' in w or 'HTTP 500' in w for w in d.get('warnings') or []), 'L6: a bound that is not an ISO instant stays in the graph (never sent to GitHub, no 500)', f'{[w[:120] for w in d.get("warnings") or []]}')
 
-print('\n' + ('DRIFT DETECTED: ' + '; '.join(fails) if fails else 'ALL CHECKS PASS') + f'  ({gh_calls} GitHub calls)')
+# ---- L3 cost: a search's total_count is the count. Issues raised by the author of the
+# repository's newest issue, counted through RAISED, equal GitHub's total_count in one call.
+newest = gh(f'/repos/{REPO}/issues', {'state': 'all', 'per_page': 1})
+if newest:
+    login = newest[0]['user']['login']
+    truth = gh('/search/issues', {'q': f'is:issue author:{login}', 'per_page': 1})['total_count']
+    d = post('/api/v1/admin/kg/execute', {'cypher': f"MATCH (g:GitHubIdentity {{login: '{login}'}})-[:RAISED]->(i:GitHubIssue) RETURN count(i) AS n",
+                                          'ai': {'fresh': True}})
+    m = d.get('metrics') or {}
+    calls = m.get('externalCalls', m.get('apiCalls'))
+    n = (d.get('rows') or [{}])[0].get('n')
+    check(n == truth, f'L3: issues raised by {login} == GitHub search total_count', f'{n} vs {truth}')
+    check(calls == 1, f'L3: that count is one call (total_count), not a walk of {truth // 100 + 1} pages', f'externalCalls={calls}')
+
+print(f'\n{gh_calls} GitHub calls')
+print('DRIFT DETECTED: ' + '; '.join(fails) if fails else 'ALL CHECKS PASS')
 sys.exit(1 if fails else 0)

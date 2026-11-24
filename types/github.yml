@@ -20,7 +20,7 @@
     url:           "Web URL of the pull request"
     body_excerpt:  "Body excerpt for LLM context"
     labels:        "Labels on the pull request (list)"
-    comment_count: "Number of comments on the pull request"
+    comment_count: { type: int, description: "Number of conversation comments on the pull request when the signal fired." }
 
 - name: GitHubMentioned
   parents: [Signal]
@@ -85,7 +85,7 @@
 - name: GitHubIdentity
   visibility: internal
   userAnchor: false
-  description: "Links a canonical Person to their GitHub login; the bridge anchor for on-demand GitHub joins."
+  description: "One GitHub account, identified by its `login`, linked to the canonical Person it belongs to: the bridge anchor for on-demand GitHub joins (issues raised, PRs opened, work assigned)."
   # Populated reliably for the CONNECTING user on OAuth authorize: the resolved
   # GitHub login (apis.yml identity.account-id-field: login) becomes the
   # GitHubIdentity, linked to the user's own Person (matched by email).
@@ -110,6 +110,7 @@
       keyField: email
       recordKeyField: email
       producer: githubUsersByEmail
+      description: "The GitHub account a Person is, found from any of the person's emails (a stored link first, then a learned githubLogin, then GitHub's user search by each email). Empty when GitHub keeps the address private: set Person.githubLogin."
       resolve:
         - existingBridge
         - learnedHandle: { property: githubLogin }
@@ -119,6 +120,8 @@
       description: "GitHub login — identity, and the key issue search filters by (author:<login>)."
       metadata:
         identity: "true"
+    # No hub: or joinKey: here. This is the address the bridge was RESOLVED from, echoed back; the
+    # Person it belongs to is already reached by HAS_GITHUB, and minting on it would add nothing.
     email:
       description: "The Person email this login was resolved from (echoed by the producer)."
 
@@ -157,7 +160,7 @@
   parents: [Issue]
   visibility: internal
   userAnchor: false
-  description: "A GitHub issue, fetched on demand by author/assignee (off a GitHubIdentity) or by repo (off a GitHubRepository). It is an Issue of the dev vocabulary: name :Issue to read every installed tracker, :GitHubIssue for GitHub alone. i.authorKind says whether a person, a bot, a coding agent or an assisted person raised it; i.status is open/closed; i.key is 'github.com/owner/repo#number'. Issues fetched BY REPO include pull requests (a PR is an issue to GitHub's REST list): they carry isChangeRequest = true, so filter it out for issues alone."
+  description: "One GitHub issue, identified by GitHub's issue id (`id`; `key` is 'github.com/owner/repo#number'), fetched on demand by author/assignee (off a GitHubIdentity) or by repo (off a GitHubRepository). It is an Issue of the dev vocabulary: name :Issue to read every installed tracker, :GitHubIssue for GitHub alone. i.authorKind says whether a person, a bot, a coding agent or an assisted person raised it; i.status is open/closed; i.key is 'github.com/owner/repo#number'. Issues fetched BY REPO include pull requests (a PR is an issue to GitHub's REST list): they carry isChangeRequest = true, so filter it out for issues alone."
   virtualJoins:
     - anchorLabel: GitHubIdentity
       relationship: RAISED
@@ -182,6 +185,7 @@
                                            # IN a repo" semijoin onto the repo-materialized issues instead of
                                            # a per-login issuesByAssignee fan-out (mirror of RAISED/authorLogin)
       producer: issuesByAssignee
+      description: "Issues assigned to a BOUND login (a pinned GitHubIdentity, or a Person via HAS_GITHUB): GitHub's issue search by assignee, one call per login. For 'who has the most assigned in a repo' use the repo's HAS_ISSUE and group by i.assigneeLogin instead."
     - anchorLabel: GitHubRepository
       relationship: HAS_ISSUE      # (r:GitHubRepository)-[:HAS_ISSUE]->(i) = ALL issues in the repo (any author)
       keyField: full_name          # owner/repo, split into the op's owner/repo path params
@@ -198,7 +202,7 @@
     html_url: "Web URL of the issue (owner/repo parse out of this for write-backs)."
     owner: "Repository owner as GitHub spells it, from html_url. With repo and number, the key a per-issue fetch (comments) is made under."
     repo: "Repository name as GitHub spells it, from html_url."
-    mergedAt: "When this issue, being a pull request, was merged; null otherwise. Lifted so a PR reached through the issue door (which GitHub narrows by updatedAt) still says whether it merged."
+    mergedAt: "When this issue, being a pull request, was merged, ISO-8601 UTC (2026-11-05T09:30:00Z); null otherwise. Lifted so a PR reached through the issue door (which GitHub narrows by updatedAt) still says whether it merged."
     # Scalar search-item fields the verb class (src/api/issue.ts) reads. They
     # persist automatically — the materializer stores every scalar in the record;
     # declaring them here just makes them visible in the schema. (Nested fields
@@ -263,7 +267,7 @@
   parents: [ChangeRequest]
   visibility: internal
   userAnchor: false
-  description: "A GitHub pull request, fetched on demand by author/assignee and linked to a GitHubIdentity. It is a ChangeRequest of the dev vocabulary: name :ChangeRequest to read every installed forge, :GitHubPullRequest for GitHub alone. pr.authorKind says whether a person, a bot, a coding agent or an assisted person opened it; pr.status is open/merged/closed (GitHub's own state, open/closed, stays in pr.state); pr.key is 'github.com/owner/repo#number'."
+  description: "One GitHub pull request, identified by GitHub's pull-request id (`id`; `key` is 'github.com/owner/repo#number'), fetched on demand by author/assignee and linked to a GitHubIdentity. It is a ChangeRequest of the dev vocabulary: name :ChangeRequest to read every installed forge, :GitHubPullRequest for GitHub alone. pr.authorKind says whether a person, a bot, a coding agent or an assisted person opened it; pr.status is open/merged/closed (GitHub's own state, open/closed, stays in pr.state); pr.key is 'github.com/owner/repo#number'."
   virtualJoins:
     - anchorLabel: GitHubIdentity
       relationship: OPENED         # (g:GitHubIdentity)-[:OPENED]->(pr) = PRs this login authored
@@ -272,12 +276,14 @@
       materializedKeyField: authorLogin  # flat scalar pullsByRepo projects; back-hop onto PRs already
                                          # materialized by the repo links via semijoin (no pullsByAuthor fan-out)
       producer: pullsByAuthor
+      description: "Pull requests a BOUND login opened (a pinned GitHubIdentity, or a Person via HAS_GITHUB): GitHub's search by author, one call per login. For 'top PR openers in a repo' use the repo's HAS_PULL_REQUEST and group by pr.authorLogin instead."
     - anchorLabel: GitHubIdentity
       relationship: ASSIGNED       # PRs assigned to this login
       keyField: login
       recordKeyField: assignee.login
       materializedKeyField: assigneeLogin  # semijoin onto repo-materialized PRs (mirror of issue ASSIGNED)
       producer: pullsByAssignee
+      description: "Pull requests assigned to a BOUND login: GitHub's search by assignee, one call per login. Primary assignee only; reviewers requested are on the PR's reviewerLogins."
     - anchorLabel: GitHubRepository
       relationship: HAS_PULL_REQUEST   # (r:GitHubRepository)-[:HAS_PULL_REQUEST]->(pr) = ALL PRs in the repo
       keyField: full_name
@@ -289,7 +295,7 @@
       description: "GitHub pull-request id — identity of the PR."
       metadata:
         identity: "true"
-    title: "PR title."
+    title: "The pull request's title as its author wrote it, one line; GitHub keeps the edit history, this is the current one."
     number: "PR number within its repo (the pulls/* ops' pull_number)."
     html_url: "Web URL of the PR (owner/repo parse out of this for write-backs)."
     owner: "Repository owner as GitHub spells it, from html_url. With repo and number, the key a per-issue fetch (comments, reviews, commits, files) is made under."
@@ -404,7 +410,7 @@
   parents: [Review]
   visibility: internal
   userAnchor: false
-  description: "One review submitted on a pull request: approved, changes requested, or a comment-only pass. A Review of the dev vocabulary: r.verdict, r.authorKind, r.submittedAt. Reached from (:GitHubPullRequest)-[:HAS_REVIEW]->, one call per PR — narrow the PRs first."
+  description: "One review submitted on a pull request, identified by GitHub's review id (`id`): approved, changes requested, or a comment-only pass. A Review of the dev vocabulary: r.verdict, r.authorKind, r.submittedAt. Reached from (:GitHubPullRequest)-[:HAS_REVIEW]->, one call per PR — narrow the PRs first."
   virtualJoins:
     - anchorLabel: GitHubPullRequest
       relationship: HAS_REVIEW
@@ -481,7 +487,7 @@
   parents: [FileChange]
   visibility: internal
   userAnchor: false
-  description: "One file as one commit or one pull request changed it: path, status, lines added and deleted, and the changed line ranges from the patch. A FileChange of the dev vocabulary. Reached from (:GitHubCommit)-[:CHANGED]-> (one call per commit, cached a week) or (:GitHubPullRequest)-[:CHANGED]-> (the PR's whole diff in one call). Narrow the commits or PRs first."
+  description: "One file as one commit or one pull request changed it, identified by `id` = `<subjectKey>!<path>`: path, status, lines added and deleted, and the changed line ranges from the patch. A FileChange of the dev vocabulary. Reached from (:GitHubCommit)-[:CHANGED]-> (one call per commit, cached a week) or (:GitHubPullRequest)-[:CHANGED]-> (the PR's whole diff in one call). Narrow the commits or PRs first."
   virtualJoins:
     - anchorLabel: GitHubCommit
       relationship: CHANGED
