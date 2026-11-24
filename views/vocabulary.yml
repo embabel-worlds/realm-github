@@ -25,7 +25,7 @@
 
 - name: GitHubAuthorship
   description: >-
-    SELECT THIS for "what share of the work in owner/repo is machine-generated", "how many
+    Issues, PRs, comments and commits per author kind: person, bot, agent. SELECT THIS for "what share of the work in owner/repo is machine-generated", "how many
     pull requests / issues / comments / commits were written by bots, by coding agents, by
     people with an agent's help", "human versus machine in owner/repo". One row per record kind
     (issue, change-request, comment — on the conversation, review-comment — on a line of a
@@ -72,7 +72,7 @@
 
 - name: GitHubChangeRequestsByAuthorKind
   description: >-
-    SELECT THIS for "pull requests opened by coding agents versus people in owner/repo, by
+    Pull requests per month by author kind and outcome, with time to merge. SELECT THIS for "pull requests opened by coding agents versus people in owner/repo, by
     month", "how do agent-opened PRs end — merged or closed", "agent PR merge rate", "are
     assisted PRs merged faster". One row per month, authorKind and outcome (open, merged,
     closed), with the count and the mean hours from opening to merge for the merged ones.
@@ -100,7 +100,7 @@
 
 - name: GitHubChangeRequestThroughput
   description: >-
-    SELECT THIS for "PR merge rate last week in owner/repo", "how many pull requests were merged
+    Pull requests opened, merged and closed per period, by author kind. SELECT THIS for "PR merge rate last week in owner/repo", "how many pull requests were merged
     or closed this month, this quarter, this year", "PR volume by week, human versus machine",
     "pull request throughput by period and author kind", "how many PRs did agents open last
     quarter and how many of them were merged". One row per period (week, month, quarter or year,
@@ -142,7 +142,7 @@
 
 - name: GitHubReviewBurden
   description: >-
-    SELECT THIS for "do agent-written pull requests draw more review than human ones in
+    Review comments and reviews per merged PR, by the PR author's kind. SELECT THIS for "do agent-written pull requests draw more review than human ones in
     owner/repo", "how many human review comments does an assisted PR get", "review burden by
     author kind", "who reviews the agents' work". For the pull requests MERGED in a window:
     one row per PR authorKind, with PRs, the mean number of review-line comments per PR, how
@@ -150,7 +150,7 @@
     PRs had changes requested. GitHub narrows the read to `since` itself; then one call per PR
     for its reviews and one for its line comments, so keep the window to what a hundred PRs
     cover. Assisted means a person's PR whose description declares an agent generated it; a PR
-    an agent wrote with no marker counts as human.
+    an agent wrote with no marker counts as human. Only PRs merged in the window; open and closed-unmerged PRs are not counted.
   params:
     repo:  { type: string, default: "embabel/embabel-agent", description: "Repository as owner/repo." }
     since: { type: string, default: "2026-10-01T00:00:00Z", description: "ISO-8601 lower bound on mergedAt, pushed to GitHub (as an updated-since bound the graph refines). Keep it to a window of at most a hundred merged PRs." }
@@ -180,13 +180,13 @@
 
 - name: GitHubCommitSize
   description: >-
-    SELECT THIS for "how big are the agents' commits compared with people's in owner/repo",
+    Lines and files per default-branch commit, by author kind. SELECT THIS for "how big are the agents' commits compared with people's in owner/repo",
     "lines and files per commit by author kind", "do assisted commits touch more files", "do
     the agents ship tests". For the non-merge commits on the default branch authored since a
     date: one row per authorKind with commits, mean and largest files changed, mean and
     largest lines changed (additions plus deletions), and how many touched a test file.
     GitHub narrows the read to `since` itself; then one call per commit for its files (cached a
-    week), so keep the window to what a hundred commits cover.
+    week), so keep the window to what a hundred commits cover. Merge commits and other branches are not counted.
   params:
     repo:  { type: string, default: "embabel/embabel-agent", description: "Repository as owner/repo." }
     since: { type: string, default: "2026-10-01T00:00:00Z", description: "ISO-8601 lower bound on the author date, pushed to GitHub. Keep it to a window of at most a hundred commits." }
@@ -207,12 +207,12 @@
 
 - name: GitHubFileHotspots
   description: >-
-    SELECT THIS for "which files change most in owner/repo", "hotspots", "the files the
+    Files ranked by how many commits since a date touched them. SELECT THIS for "which files change most in owner/repo", "hotspots", "the files the
     agents keep touching", "what changed since a date". For the non-merge commits authored
     since a date: one row per file path with how many commits touched it, lines changed, and
     how many of those commits were by people, by agents (assisted or agent) and by bots.
     GitHub narrows the read to `since` itself; then one call per commit (cached a week), so
-    keep the window to what a hundred commits cover.
+    keep the window to what a hundred commits cover. Merge commits are not counted.
   params:
     repo:  { type: string, default: "embabel/embabel-agent", description: "Repository as owner/repo." }
     since: { type: string, default: "2026-10-01T00:00:00Z", description: "ISO-8601 lower bound on the author date, pushed to GitHub." }
@@ -241,7 +241,7 @@
 
 - name: GitHubCommentReadsAs
   description: >-
-    SELECT THIS for "does this comment read as written by a person or a machine", "which
+    Per comment: declared author kind beside a model's read of its text. SELECT THIS for "does this comment read as written by a person or a machine", "which
     comments in owner/repo look AI-generated", "comments whose author is a person but whose
     text reads as machine-written". For the conversation comments written since a date: one row
     per comment with the declared authorKind (what the record says: human, bot, agent,
@@ -270,7 +270,7 @@
 
 - name: GitHubCommentProvenance
   description: >-
-    SELECT THIS for "how much of what reads as machine-written in owner/repo is declared as
+    Declared author kind against a model's judgement, counted per pair. SELECT THIS for "how much of what reads as machine-written in owner/repo is declared as
     such", "how good is the declared authorKind", "how many human-attributed comments look
     AI-generated". For the conversation comments written since a date: one row per declared
     authorKind and judged label with the count — the agreement matrix between what the records
@@ -305,7 +305,7 @@
 
 - name: GitHubChangeRequestSize
   description: >-
-    SELECT THIS for "how big are the PRs in owner/repo", "files changed per pull request", "what
+    Each pull request opened in a window with its files, lines and kinds. SELECT THIS for "how big are the PRs in owner/repo", "files changed per pull request", "what
     languages did each PR touch", "how much of PR 123 was tests", "the largest pull requests this
     month", "lines of documentation per change". For the change requests OPENED in a window: one
     row per change request with its author and authorKind, status, files, lines added and deleted,
@@ -347,14 +347,14 @@
 
 - name: GitHubChangeRequestSizeByAuthorKind
   description: >-
-    SELECT THIS for "do the agents' PRs touch more files than people's in owner/repo", "mean PR
+    Mean pull request size and test share, by author kind. SELECT THIS for "do the agents' PRs touch more files than people's in owner/repo", "mean PR
     size by author kind", "what share of the lines in agent PRs are tests", "do assisted pull
     requests ship documentation". For the change requests OPENED in a window: one row per
     authorKind, plus a row for all of them together, with the number of change requests, mean and
     largest files changed, mean and largest lines changed, the share of changed lines that are
     tests and that are docs (percent), and how many change requests touched a test file and a docs
     file. The same per-change-request diff fetch as GitHubChangeRequestSize; keep the window to a
-    hundred or so.
+    hundred or so. Only change requests opened in the window.
   params:
     repo:  { type: string, default: "embabel/embabel-agent", description: "Repository as owner/repo." }
     since: { type: string, default: "2026-10-25T00:00:00Z", description: "ISO-8601 lower bound on openedAt, pushed to GitHub." }
@@ -387,7 +387,7 @@
 
 - name: GitHubChangeRequestConcern
   description: >-
-    SELECT THIS for "what were the PRs in owner/repo about", "how many of last month's pull
+    What each pull request opened in a window concerns, judged by a model. SELECT THIS for "what were the PRs in owner/repo about", "how many of last month's pull
     requests were bug fixes", "classify the PRs by what they concern", "which area of the code did
     the agents work on", "what kind of technology do the recent changes touch". For the change
     requests OPENED in a window: one row per change request with its author kind and status, a
@@ -395,7 +395,7 @@
     security, chore) and a judged area — the part of the system or the technology the change is
     about, in a few words — both read by a model from the title, body and labels. One batched model
     call per dimension over the window: keep it to a hundred or so. The concern and area are a
-    model's opinion; the author kind and status are facts.
+    model's opinion; the author kind and status are facts. Only change requests opened in the window.
   params:
     repo:    { type: string, default: "embabel/embabel-agent", description: "Repository as owner/repo." }
     since:   { type: string, default: "2026-10-25T00:00:00Z", description: "ISO-8601 lower bound on openedAt, pushed to GitHub. Every change request in the window is judged; keep it small." }
@@ -415,11 +415,11 @@
 
 - name: GitHubChangeRequestConcernMix
   description: >-
-    SELECT THIS for "what mix of fixes and features did owner/repo ship last month", "how many
+    Pull requests per judged concern and author kind, counted. SELECT THIS for "what mix of fixes and features did owner/repo ship last month", "how many
     PRs were dependency bumps", "what do the agents' PRs concern compared with people's", "share of
     bug fixes by author kind". For the change requests OPENED in a window: one row per judged
     concern and authorKind with the count — the same model judgment as GitHubChangeRequestConcern,
-    aggregated. One batched model call over the window; keep it to a hundred or so.
+    aggregated. One batched model call over the window; keep it to a hundred or so. Only change requests opened in the window.
   params:
     repo:  { type: string, default: "embabel/embabel-agent", description: "Repository as owner/repo." }
     since: { type: string, default: "2026-10-25T00:00:00Z", description: "ISO-8601 lower bound on openedAt, pushed to GitHub." }
@@ -442,7 +442,7 @@
 
 - name: GitHubRepositoryLanguages
   description: >-
-    SELECT THIS for "what languages is owner/repo written in", "language percentages of the repo",
+    A repository's languages by bytes and share, as GitHub counts them. SELECT THIS for "what languages is owner/repo written in", "language percentages of the repo",
     "how much Kotlin versus Java", "is this a TypeScript project". The repository's language table
     as GitHub counts it: one row per language with bytes of source and the share of the whole,
     largest first. One call, cached a day. Vendored and generated code is excluded by GitHub's own
@@ -460,7 +460,7 @@
 
 - name: GitHubRepositoryProfile
   description: >-
-    SELECT THIS for "what kind of project is owner/repo", "is it Spring Boot or Node", "what
+    A repository's languages, build tools and package managers, in one row. SELECT THIS for "what kind of project is owner/repo", "is it Spring Boot or Node", "what
     stack does this repository use", "describe the project", "what build tool does it use". One
     row: the languages by share (from GitHub's table), the build tools and package managers read
     off the manifests at the project root (pom.xml, build.gradle, package.json, pyproject.toml,
@@ -538,7 +538,7 @@
 
 - name: GitHubCommitAuthors
   description: >-
-    SELECT THIS for "who is committing to owner/repo", "what do we know about the people making
+    Who committed since a date, with what else the world knows about them. SELECT THIS for "who is committing to owner/repo", "what do we know about the people making
     the changes", "which committers are also customers or contacts", "commit authors and their
     company", "who wrote the most code last month and who are they". For the non-merge commits
     authored since a date: one row per author (login and email as the commits record them) with the names they committed
