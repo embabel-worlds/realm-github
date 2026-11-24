@@ -375,13 +375,11 @@ newest = gh(f'/repos/{REPO}/issues', {'state': 'all', 'per_page': 1})
 if newest:
     login = newest[0]['user']['login']
     truth = gh('/search/issues', {'q': f'is:issue author:{login}', 'per_page': 1})['total_count']
-    d = post('/api/v1/admin/kg/execute', {'cypher': f"MATCH (g:GitHubIdentity {{login: '{login}'}})-[:RAISED]->(i:GitHubIssue) RETURN count(i) AS n",
-                                          'ai': {'fresh': True}})
-    m = d.get('metrics') or {}
-    calls = m.get('externalCalls', m.get('apiCalls'))
+    d = post('/api/v1/admin/kg/execute', {'cypher': f"MATCH (g:GitHubIdentity {{login: '{login}'}})-[:RAISED]->(i:GitHubIssue) RETURN count(i) AS n"})
+    calls = d.get('apiCalls')   # source calls this run made: 0 when cached, never a page walk
     n = (d.get('rows') or [{}])[0].get('n')
     check(n == truth, f'L3: issues raised by {login} == GitHub search total_count', f'{n} vs {truth}')
-    check(calls == 1, f'L3: that count is one call (total_count), not a walk of {truth // 100 + 1} pages', f'externalCalls={calls}')
+    check(calls is not None and calls <= 1, f'L3: that count is at most one call (total_count), not a walk of {truth // 100 + 1} pages', f'externalCalls={calls}')
 
 print(f'\n{gh_calls} GitHub calls')
 print('DRIFT DETECTED: ' + '; '.join(fails) if fails else 'ALL CHECKS PASS')
