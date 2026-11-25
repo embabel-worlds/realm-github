@@ -39,12 +39,45 @@ def gh_pages(path, params, max_pages):
         if len(batch) < 100: break
     return out
 
+# Warning codes that mean rows or values may be missing. A source that failed under load, a capped
+# page or a hop past its anchors leaves rows that still look like an answer, and a figure read off
+# them reports drift that is GitHub's, not the realm's. Cost notes (FILTERED_IN_GRAPH,
+# AGGREGATE_NOT_PUSHED, EMPTY_NOT_KEPT, PUSHDOWN_VALUE_UNMATCHED), an honest FILTER_STARVED empty,
+# STALE_COPY, FIELDS_WITHHELD and UNKNOWN_VIA leave every row in place.
+SHORT_CODES = ('PARTIAL_RESULT', 'PRODUCER_ERROR', 'NEEDS_FILTER', 'NEEDS_PRODUCER', 'FILTER_REJECTED',
+               'UNPUSHED_FILTER', 'AMBIGUOUS_LABEL', 'INCOMPLETE_TRAVERSAL', 'INCOMPLETE_RANKING',
+               'INCOMPLETE_AGGREGATE', 'INCOMPLETE_INPUT', 'MATERIALIZATION_FAILED', 'REDUCTION_FAILED',
+               'UNPARSEABLE_ANSWER', 'TERMS_UNAVAILABLE', 'COMPUTE_FAILED', 'PROPERTY_NOT_STORED',
+               'FOLLOW_CAPPED', 'UNLINKED_CHILDREN', 'RESOLUTION_DROPPED', 'AGENTIC_DEGRADED',
+               'SOURCE_UNANSWERED')
+SHORT_REASONS = ('UNBOUNDED', 'PARTIAL_NOT_MATCHED', 'UNPUSHED_FILTER', 'DISCONNECTED',
+                 'INTERNAL_ERROR', 'WRITE_IN_PROGRESS', 'KILLED', 'TOO_EXPENSIVE')
+def short(d, figure=None):
+    """None when the engine says this answer is whole; else `REFUSED: <why>` or `PARTIAL <figure>: <reason>`."""
+    tag = 'PARTIAL' if figure is None else f'PARTIAL {figure}'
+    if d.get('error'): return f'REFUSED: {str(d["error"])[:200]}'
+    if d.get('run'): return f'{tag}: the run had not finished'
+    ws = [w for w in d.get('warnings') or [] if isinstance(w, str) and w.split(':', 1)[0].strip() in SHORT_CODES]
+    if ws: return f'{tag}: {ws[0][:200]}'
+    if d.get('reason') in SHORT_REASONS: return f'{tag}: reason {d["reason"]}'
+    return None
+
+# What the latest engine answer said about itself. Every check reads the rows of the call before it,
+# so a short answer fails each check made from it, with the engine's reason, until the next call.
+last_short = None
+def read(d):
+    global last_short
+    last_short = short(d, len(d.get('rows') or []))
+    return d
+
 def view(name, args):
-    d = post(f'/api/v1/admin/kg/views/{name}/run', {'args': args})
+    d = read(post(f'/api/v1/admin/kg/views/{name}/run', {'args': args}))
     return d.get('rows') or [], d
 
 fails = []
-def check(cond, label, detail=''):
+def check(cond, label, detail='', whole=True):
+    """`whole=False` for a check that asserts a short or refused answer, which judges `d` itself."""
+    if whole and last_short: cond, detail = False, last_short
     print(('ok   ' if cond else 'FAIL ') + label + (f'  [{detail}]' if detail and not cond else ''), flush=True)
     if not cond: fails.append(label)
 
@@ -189,7 +222,7 @@ print('L0', json.dumps({'authorship': L0['authorship'], 'commitSize': L0['commit
 
 # ---- L1: each door, through the engine, the same windows.
 def execute(cypher):
-    d = post('/api/v1/admin/kg/execute', {'cypher': cypher}); return d.get('rows') or [], d
+    d = read(post('/api/v1/admin/kg/execute', {'cypher': cypher})); return d.get('rows') or [], d
 def l0_kinds(prefix): return {k.split('/')[1]: v for k, v in L0['authorship'].items() if k.startswith(prefix + '/')}
 pin = f"(:GitHubRepository {{full_name: '{REPO}'}})"
 rows, d = execute(f"MATCH {pin}-[:HAS_ISSUE]->(i:Issue) WITH i, i.openedAt AS openedAt, i.isChangeRequest AS isPr, i.authorKind AS k WHERE openedAt >= '{SINCE_WIDE}' AND openedAt < '{UNTIL}' RETURN isPr, k, count(*) AS n")
@@ -296,7 +329,7 @@ schema = post('/api/v1/admin/kg/execute', {'cypher': 'MATCH (n) RETURN count(n) 
 schema_text = urllib.request.urlopen(urllib.request.Request(BASE + '/api/v1/admin/kg/schema', headers={'Authorization': auth_header()}), timeout=120).read().decode(errors='replace')
 declared = set(re.findall(r'[A-Za-z_][A-Za-z0-9_]*', schema_text))
 def ask(q):
-    d = post('/api/v1/admin/kg/ask', {'question': q})
+    d = read(post('/api/v1/admin/kg/ask', {'question': q}))
     return d.get('rows') or [], d.get('cypher') or '', d
 def figures(rows):
     out = set()
@@ -335,7 +368,7 @@ for entry in battery:
             except Exception as e:
                 print(f'ok   L3 adversarial "{q}" #{i+1}: refused ({str(e)[:60]})'); continue
             props = set(re.findall(r'\.([A-Za-z_][A-Za-z0-9_]*)', cypher)); unknown = [p for p in props if p not in declared]
-            check(not rows or not unknown, f'L3 adversarial "{q}" #{i+1}: no rows, or only declared properties', f'rows={len(rows)} unknown={unknown} cypher={cypher[:120]}')
+            check(not rows or not unknown, f'L3 adversarial "{q}" #{i+1}: no rows, or only declared properties', f'rows={len(rows)} unknown={unknown} cypher={cypher[:120]}', whole=False)
         continue
     try: rows, cypher, d = ask(q)
     except Exception as e:
@@ -346,13 +379,17 @@ for entry in battery:
         mv = exp['matchesView']
         for attempt in range(2):   # generation is stochastic: a figure that matches once in two is not stable
             if attempt: rows, cypher, d = ask(q)
+            asked = short(d, len(rows))
             args = {'repo': REPO, **{k: fill(str(v)) for k, v in (mv.get('args') or {}).items()}}
             # The ask binds no `until`, so its figure may include the last two hours: accept the view's
             # figure for the closed window OR the open one, and nothing else.
-            wants = {want_from(view(mv['name'], args)[0], mv), want_from(view(mv['name'], {k: v for k, v in args.items() if k != 'until'})[0], mv)} - {None}
+            closed, open_ = view(mv['name'], args), view(mv['name'], {k: v for k, v in args.items() if k != 'until'})
+            wants = {want_from(closed[0], mv), want_from(open_[0], mv)} - {None}
             got = figures(rows)
-            ok = any((rnd(float(w)) in got) if isinstance(w, (int, float)) else (w in got) for w in wants)
-            check(ok, f'L3 "{q}" #{attempt+1} == {mv["name"]}.{mv["column"]}', f'want one of {wants} in {sorted(map(str, got))[:10]} routed={exposure.get("resolvedBy")} cypher={cypher[:140]}')
+            # The ask's figure and both views' must all be whole: a short one reconciles nothing.
+            shortfall = asked or short(closed[1], len(closed[0])) or short(open_[1], len(open_[0]))
+            ok = not shortfall and any((rnd(float(w)) in got) if isinstance(w, (int, float)) else (w in got) for w in wants)
+            check(ok, f'L3 "{q}" #{attempt+1} == {mv["name"]}.{mv["column"]}', shortfall or f'want one of {wants} in {sorted(map(str, got))[:10]} routed={exposure.get("resolvedBy")} cypher={cypher[:140]}', whole=False)
             if ok: break
     elif exp.get('nonEmpty'):
         check(len(rows) > 0, f'L3 "{q}" non-empty', f'routed={exposure.get("resolvedBy")} cypher={cypher[:140]}')
@@ -362,12 +399,12 @@ print(f'L3: {routed} of {sum(1 for e in battery if not e.get("adversarial"))} an
 
 # ---- L6: force the failures. Loud when the source says no; quiet when the window is empty.
 rows, d = view('GitHubAuthorship', {'repo': 'embabel/this-repository-does-not-exist'})
-check(not rows and any('NOT_FOUND' in w for w in d.get('warnings') or []), 'L6: an unknown repository is LOUD (NOT_FOUND named, zero rows)', f'{d.get("warnings")}')
+check(not rows and any('NOT_FOUND' in w for w in d.get('warnings') or []), 'L6: an unknown repository is LOUD (NOT_FOUND named, zero rows)', f'{d.get("warnings")}', whole=False)
 rows, d = view('GitHubAuthorship', {'repo': REPO, 'since': '2031-01-01T00:00:00Z'})
 check(not rows and not d.get('error') and not any('PARTIAL' in w for w in d.get('warnings') or []), 'L6: a window in the future is an exact empty (no error, no PARTIAL)', f'{d.get("warnings")}')
 
 rows, d = view('GitHubCommitSize', {'repo': REPO, 'since': 'last week'})
-check(not rows and not any('PRODUCER_ERROR' in w or 'HTTP 500' in w for w in d.get('warnings') or []), 'L6: a bound that is not an ISO instant stays in the graph (never sent to GitHub, no 500)', f'{[w[:120] for w in d.get("warnings") or []]}')
+check(not rows and not any('PRODUCER_ERROR' in w or 'HTTP 500' in w for w in d.get('warnings') or []), 'L6: a bound that is not an ISO instant stays in the graph (never sent to GitHub, no 500)', f'{[w[:120] for w in d.get("warnings") or []]}', whole=False)
 
 print('\n' + ('DRIFT DETECTED: ' + '; '.join(fails) if fails else 'ALL CHECKS PASS') + f'  ({gh_calls} GitHub calls)')
 sys.exit(1 if fails else 0)
