@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GitHubPullRequest = void 0;
 const runtime_types_1 = require("@embabel/runtime-types");
+const arguments_1 = require("../lib/arguments");
 const DAY_MS = 86_400_000;
 // ─── The type ───────────────────────────────────────────────────────────────
 /**
@@ -16,8 +17,8 @@ const DAY_MS = 86_400_000;
  *    these read `state` / `draft` / `comments` / `created_at` — not `labels` /
  *    `requested_reviewers` (objects/arrays, not stored).
  *  - **effectful** — write back through `this.gateway.gh.*`. State / comment /
- *    labels / assignees reuse the `issues_*` ops (a PR is an issue for those);
- *    `merge` and `requestReviewers` use `pulls_*`. GitHub has no `If-Match`
+ *    labels / assignees reuse the `issues/*` ops (a PR is an issue for those);
+ *    `merge` and `requestReviewers` use `pulls/*`. GitHub has no `If-Match`
  *    precondition here, so the verbs are written to be idempotent where the API
  *    allows (closing a closed PR, adding a present label).
  *
@@ -79,44 +80,58 @@ class GitHubPullRequest extends runtime_types_1.Entity {
     /** Merge the PR. `method` selects merge/squash/rebase (default squash). */
     async merge(args = {}) {
         const { owner, repo } = this.repoRef();
-        return this.api.gh.pulls_merge({
+        return this.api.gh["pulls/merge"]({
             owner,
             repo,
             pull_number: this.number,
-            merge_method: args.method ?? "squash",
-            commit_title: args.title,
-            commit_message: args.message,
+            body: {
+                merge_method: args.method ?? "squash",
+                commit_title: args.title,
+                commit_message: args.message,
+            },
         });
     }
-    /** Request reviews from GitHub logins (additive). */
-    async requestReviewers(...reviewers) {
+    /**
+     * Request reviews from GitHub logins, passed as one array: `requestReviewers(["alice"])`
+     * (additive). Refuses an empty list, which GitHub rejects, or a blank login.
+     */
+    async requestReviewers(reviewers) {
+        const names = (0, arguments_1.nameList)(reviewers, "requestReviewers", "reviewer");
         const { owner, repo } = this.repoRef();
-        return this.api.gh.pulls_request_reviewers({ owner, repo, pull_number: this.number, reviewers });
+        return this.api.gh["pulls/request-reviewers"]({ owner, repo, pull_number: this.number, body: { reviewers: names } });
     }
     /** Close the PR without merging. `reason` records why. Idempotent. */
     async close(reason = "not_planned") {
         const { owner, repo } = this.repoRef();
-        return this.api.gh.issues_update({ owner, repo, issue_number: this.number, state: "closed", state_reason: reason });
+        return this.api.gh["issues/update"]({ owner, repo, issue_number: this.number, body: { state: "closed", state_reason: reason } });
     }
     /** Reopen the PR. Idempotent. */
     async reopen() {
         const { owner, repo } = this.repoRef();
-        return this.api.gh.issues_update({ owner, repo, issue_number: this.number, state: "open", state_reason: "reopened" });
+        return this.api.gh["issues/update"]({ owner, repo, issue_number: this.number, body: { state: "open", state_reason: "reopened" } });
     }
     /** Add a comment (PR comments go through the issues endpoint). */
     async comment(body) {
         const { owner, repo } = this.repoRef();
-        return this.api.gh.issues_create_comment({ owner, repo, issue_number: this.number, body });
+        return this.api.gh["issues/create-comment"]({ owner, repo, issue_number: this.number, body: { body } });
     }
-    /** Add labels (additive; GitHub ignores ones already present). */
-    async addLabels(...labels) {
+    /**
+     * Add labels, passed as one array: `addLabels(["needs-review"])` (additive; GitHub ignores
+     * ones already present). Refuses an empty list or a blank label.
+     */
+    async addLabels(labels) {
+        const names = (0, arguments_1.nameList)(labels, "addLabels", "label");
         const { owner, repo } = this.repoRef();
-        return this.api.gh.issues_add_labels({ owner, repo, issue_number: this.number, labels });
+        return this.api.gh["issues/add-labels"]({ owner, repo, issue_number: this.number, body: { labels: names } });
     }
-    /** Assign GitHub logins (additive; distinct from reviewers). */
-    async assign(...assignees) {
+    /**
+     * Assign GitHub logins, passed as one array: `assign(["octocat"])` (additive; distinct from
+     * reviewers). Refuses an empty list or a blank login.
+     */
+    async assign(assignees) {
+        const names = (0, arguments_1.nameList)(assignees, "assign", "assignee");
         const { owner, repo } = this.repoRef();
-        return this.api.gh.issues_add_assignees({ owner, repo, issue_number: this.number, assignees });
+        return this.api.gh["issues/add-assignees"]({ owner, repo, issue_number: this.number, body: { assignees: names } });
     }
 }
 exports.GitHubPullRequest = GitHubPullRequest;
